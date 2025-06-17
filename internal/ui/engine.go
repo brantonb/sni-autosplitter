@@ -9,15 +9,17 @@ import (
 
 	"github.com/jdharms/sni-autosplitter/internal/config"
 	"github.com/jdharms/sni-autosplitter/internal/engine"
+	"github.com/jdharms/sni-autosplitter/internal/livesplit"
 	"github.com/jdharms/sni-autosplitter/internal/sni"
 	"github.com/sirupsen/logrus"
 )
 
 // EngineController manages the splitting engine lifecycle and provides UI feedback
 type EngineController struct {
-	logger *logrus.Logger
-	cli    *CLI
-	engine *engine.SplittingEngine
+	logger          *logrus.Logger
+	cli             *CLI
+	engine          *engine.SplittingEngine
+	liveSplitServer *livesplit.Server
 }
 
 // NewEngineController creates a new engine controller
@@ -59,6 +61,10 @@ func (ec *EngineController) InitializeEngine(
 		ec.onStateChange,
 	)
 
+	// Create and initialize LiveSplit server
+	ec.liveSplitServer = livesplit.NewServer(ec.logger, "localhost", 1990)
+	ec.liveSplitServer.SetEngine(ec.engine)
+
 	ec.cli.printSuccess("Splitting engine initialized")
 	return nil
 }
@@ -78,6 +84,17 @@ func (ec *EngineController) StartEngine(ctx context.Context) error {
 	// Start monitoring engine events
 	go ec.monitorEngineEvents(ctx)
 
+	// Start LiveSplit server if available
+	if ec.liveSplitServer != nil {
+		ec.cli.printInfo("Starting LiveSplit server...")
+		if err := ec.liveSplitServer.Start(ctx); err != nil {
+			ec.logger.WithError(err).Error("Failed to start LiveSplit server")
+			// Continue even if LiveSplit server fails to start
+		} else {
+			ec.cli.printSuccess("LiveSplit server started")
+		}
+	}
+
 	ec.cli.printSuccess("Splitting engine started")
 	ec.displayEngineStatus()
 
@@ -91,6 +108,17 @@ func (ec *EngineController) StopEngine() error {
 	}
 
 	ec.cli.printInfo("Stopping splitting engine...")
+
+	// Stop LiveSplit server if available
+	if ec.liveSplitServer != nil {
+		ec.cli.printInfo("Stopping LiveSplit server...")
+		if err := ec.liveSplitServer.Stop(context.Background()); err != nil {
+			ec.logger.WithError(err).Error("Failed to stop LiveSplit server")
+			// Continue even if LiveSplit server fails to stop
+		} else {
+			ec.cli.printSuccess("LiveSplit server stopped")
+		}
+	}
 
 	if err := ec.engine.Stop(); err != nil {
 		return fmt.Errorf("failed to stop engine: %w", err)

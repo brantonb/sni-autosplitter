@@ -212,6 +212,7 @@ func (s *Server) monitorEngineEvents(ctx context.Context) {
 	}
 
 	splitChan := s.engine.GetSplitChan()
+	statusChan := s.engine.GetStatusChan()
 
 	for {
 		select {
@@ -222,6 +223,11 @@ func (s *Server) monitorEngineEvents(ctx context.Context) {
 				return
 			}
 			s.handleSplitEvent(splitEvent)
+		case statusEvent, ok := <-statusChan:
+			if !ok {
+				return
+			}
+			s.handleStatusEvent(statusEvent)
 		}
 	}
 }
@@ -232,6 +238,14 @@ func (s *Server) handleSplitEvent(event engine.SplitEvent) {
 
 	// Send split command
 	s.sendCommand("split")
+}
+
+// handleStatusEvent handles status events from the engine
+func (s *Server) handleStatusEvent(event engine.StatusEvent) {
+	switch event.State {
+	case engine.StateRunning:
+		s.sendCommand("start")
+	}
 }
 
 // sendCommand sends a command to all connected clients
@@ -247,7 +261,7 @@ func (s *Server) sendCommand(command string) {
 	}
 
 	s.broadcast(data)
-	s.logger.WithField("command", command).Debug("Command sent to LiveSplit clients")
+	s.logger.WithField("command", command).Info("Command sent to LiveSplit clients")
 }
 
 // Client methods
@@ -318,11 +332,15 @@ func (c *Client) writePump() {
 	}
 }
 
-// handleIncomingMessage handles messages received from LiveSplit One
+// handleIncomingMessage handles event messages received from LiveSplit One
+// LiveSplit One doesn't send us commands, only events. These events could reflect
+// LiveSplit catching up with commands we sent, or they could reflect something the
+// user did in LiveSplit. We should always assume that split events correspond to
+// commands we sent, and that skip events are user-initiated.
 func (c *Client) handleIncomingMessage(message []byte) {
-	c.logger.WithField("message", string(message)).Debug("Received message from LiveSplit client")
+	c.logger.WithField("message", string(message)).Info("Received message from LiveSplit client")
 
-	// Parse the command
+	// Parse the event
 	var cmd map[string]interface{}
 	if err := json.Unmarshal(message, &cmd); err != nil {
 		c.logger.WithError(err).Error("Failed to parse incoming message")
@@ -330,23 +348,48 @@ func (c *Client) handleIncomingMessage(message []byte) {
 	}
 
 	// Handle different command types
-	if command, ok := cmd["command"].(string); ok {
-		switch command {
+	if event, ok := cmd["event"].(string); ok {
+		switch event {
 		case "Reset":
-			c.handleResetCommand()
+			c.logger.Info("Reset event received from LiveSplit client")
+			c.handleResetEvent()
+		case "SplitSkipped":
+			c.logger.Info("Split skipped event received from LiveSplit client")
+			c.handleSplitSkippedEvent()
+		case "SplitUndone":
+			c.logger.Info("Split undone event received from LiveSplit client")
+			c.handleSplitUndoneEvent()
 		default:
-			c.logger.WithField("command", command).Debug("Unhandled command from LiveSplit client")
+			c.logger.WithField("event", event).Info("Unhandled event from LiveSplit client")
 		}
 	}
 }
 
-// handleResetCommand handles reset commands from LiveSplit One
-func (c *Client) handleResetCommand() {
+// handleResetEvent handles reset events from LiveSplit One
+func (c *Client) handleResetEvent() {
 	if c.server.engine != nil {
 		if err := c.server.engine.ManualReset(); err != nil {
 			c.logger.WithError(err).Error("Failed to reset run")
 		} else {
 			c.logger.Info("Run reset by LiveSplit client")
+		}
+	}
+}
+
+// handleSplitSkippedEvent handles split skipped events from LiveSplit One
+func (c *Client) handleSplitSkippedEvent() {
+	if c.server.engine != nil {
+		if err := c.server.engine.ManualSkipSplit(); err != nil {
+			c.logger.WithError(err).Error("Failed to skip split")
+		}
+	}
+}
+
+// handleSplitUndoneEvent handles split undone events from LiveSplit One
+func (c *Client) handleSplitUndoneEvent() {
+	if c.server.engine != nil {
+		if err := c.server.engine.ManualUndoSplit(); err != nil {
+			c.logger.WithError(err).Error("Failed to undo split")
 		}
 	}
 }

@@ -42,6 +42,14 @@ func (ss *SplitState) SetCompleted() {
 	ss.LastUpdate = time.Now()
 }
 
+// SetIncomplete marks the split as incomplete
+func (ss *SplitState) SetIncomplete() {
+	ss.mu.Lock()
+	defer ss.mu.Unlock()
+	ss.Completed = false
+	ss.LastUpdate = time.Now()
+}
+
 // IsCompleted returns whether the split has been completed
 func (ss *SplitState) IsCompleted() bool {
 	ss.mu.RLock()
@@ -115,6 +123,8 @@ type SplitterSession struct {
 	// Event callbacks
 	onStateChange func(oldState, newState SplitterState)
 	onSplit       func(splitName string, splitIndex int)
+	onSkip        func(splitName string, splitIndex int)
+	onUndo        func(splitName string, splitIndex int)
 	onStart       func()
 	onReset       func()
 	onPause       func()
@@ -267,6 +277,72 @@ func (ss *SplitterSession) TriggerSplit() bool {
 	return true
 }
 
+// TriggerUndoSplit triggers an undo split and returns to the previous split
+func (ss *SplitterSession) TriggerUndoSplit() bool {
+	ss.mu.Lock()
+	defer ss.mu.Unlock()
+
+	if ss.state != StateRunning {
+		return false
+	}
+
+	if ss.currentSplit == 0 {
+		return false
+	}
+
+	ss.currentSplit--
+
+	splitName := ss.runConfig.Splits[ss.currentSplit]
+	splitIndex := ss.currentSplit
+
+	// Mark current split as incomplete
+	if state, exists := ss.splitStates[splitName]; exists {
+		state.SetIncomplete()
+	}
+
+	ss.lastSplit = time.Now()
+
+	// Trigger callback after updating state
+	if ss.onUndo != nil {
+		go ss.onUndo(splitName, splitIndex)
+	}
+
+	return true
+}
+
+// TriggerSkipSplit triggers a skip split and advances to the next one
+func (ss *SplitterSession) TriggerSkipSplit() bool {
+	ss.mu.Lock()
+	defer ss.mu.Unlock()
+
+	if ss.state != StateRunning {
+		return false
+	}
+
+	if ss.currentSplit >= len(ss.runConfig.Splits) {
+		return false
+	}
+
+	ss.currentSplit++
+
+	splitName := ss.runConfig.Splits[ss.currentSplit]
+	splitIndex := ss.currentSplit
+
+	// Mark current split as incomplete
+	if state, exists := ss.splitStates[splitName]; exists {
+		state.SetIncomplete()
+	}
+
+	ss.lastSplit = time.Now()
+
+	// Trigger callback after updating state
+	if ss.onSkip != nil {
+		go ss.onSkip(splitName, splitIndex)
+	}
+
+	return true
+}
+
 // Reset resets the splitter session
 func (ss *SplitterSession) Reset() {
 	ss.mu.Lock()
@@ -353,6 +429,8 @@ func (ss *SplitterSession) GetGameConfig() *config.GameConfig {
 func (ss *SplitterSession) SetCallbacks(
 	onStateChange func(oldState, newState SplitterState),
 	onSplit func(splitName string, splitIndex int),
+	onSkip func(splitName string, splitIndex int),
+	onUndo func(splitName string, splitIndex int),
 	onStart func(),
 	onReset func(),
 	onPause func(),
@@ -363,6 +441,8 @@ func (ss *SplitterSession) SetCallbacks(
 
 	ss.onStateChange = onStateChange
 	ss.onSplit = onSplit
+	ss.onSkip = onSkip
+	ss.onUndo = onUndo
 	ss.onStart = onStart
 	ss.onReset = onReset
 	ss.onPause = onPause

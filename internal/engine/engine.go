@@ -35,6 +35,8 @@ type SplittingEngine struct {
 
 	// Callbacks
 	onSplit       func(splitName string, splitIndex int)
+	onSkip        func(splitName string, splitIndex int)
+	onUndo        func(splitName string, splitIndex int)
 	onStart       func()
 	onReset       func()
 	onError       func(error)
@@ -97,6 +99,8 @@ func NewSplittingEngine(
 	engine.session.SetCallbacks(
 		engine.handleStateChange,
 		engine.handleSplit,
+		engine.handleSkip,
+		engine.handleUndo,
 		engine.handleStart,
 		engine.handleReset,
 		engine.handlePause,
@@ -174,11 +178,24 @@ func (se *SplittingEngine) ManualSplit() error {
 	return se.triggerSplit()
 }
 
+// ManualUndoSplit manually undoes the last split
+func (se *SplittingEngine) ManualUndoSplit() error {
+	se.logger.Info("Manual undo split triggered")
+	return se.triggerUndoSplit()
+}
+
+// ManualSkipSplit manually skips the last split
+func (se *SplittingEngine) ManualSkipSplit() error {
+	se.logger.Info("Manual skip split triggered")
+	return se.triggerSkipSplit()
+}
+
 // ManualReset manually resets the run
 func (se *SplittingEngine) ManualReset() error {
 	se.logger.Info("Manual reset triggered")
 	se.session.Reset()
 	se.session.SetState(StateWaitingForStart)
+	se.publishStatus(StateWaitingForStart, "Run reset - waiting for autostart")
 	return nil
 }
 
@@ -260,6 +277,7 @@ func (se *SplittingEngine) checkAutostart() error {
 	if result {
 		se.logger.Info("Autostart condition met - starting run")
 		se.session.Start()
+		se.publishStatus(StateRunning, "Run started")
 	}
 
 	return nil
@@ -309,6 +327,24 @@ func (se *SplittingEngine) triggerSplit() error {
 	if se.session.GetState() == StateCompleted {
 		se.logger.Info("Run completed!")
 		se.publishStatus(StateCompleted, "Run completed")
+	}
+
+	return nil
+}
+
+// triggerUndoSplit triggers an undo split and handles the transition
+func (se *SplittingEngine) triggerUndoSplit() error {
+	if !se.session.TriggerUndoSplit() {
+		return fmt.Errorf("failed to trigger undo split")
+	}
+
+	return nil
+}
+
+// triggerSkipSplit triggers a skip split and handles the transition
+func (se *SplittingEngine) triggerSkipSplit() error {
+	if !se.session.TriggerSkipSplit() {
+		return fmt.Errorf("failed to trigger skip split")
 	}
 
 	return nil
@@ -393,6 +429,30 @@ func (se *SplittingEngine) handleError(err error) {
 
 	if se.onError != nil {
 		go se.onError(err)
+	}
+}
+
+// handleSkip handles skip events from the session
+func (se *SplittingEngine) handleSkip(splitName string, splitIndex int) {
+	se.logger.WithFields(logrus.Fields{
+		"split_name":  splitName,
+		"split_index": splitIndex,
+	}).Info("Split skipped")
+
+	if se.onSkip != nil {
+		go se.onSkip(splitName, splitIndex)
+	}
+}
+
+// handleUndo handles undo events from the session
+func (se *SplittingEngine) handleUndo(splitName string, splitIndex int) {
+	se.logger.WithFields(logrus.Fields{
+		"split_name":  splitName,
+		"split_index": splitIndex,
+	}).Info("Split undone")
+
+	if se.onUndo != nil {
+		go se.onUndo(splitName, splitIndex)
 	}
 }
 
