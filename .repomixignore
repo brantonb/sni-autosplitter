@@ -1,0 +1,7 @@
+# Add patterns to ignore here, one per line
+# Example:
+# *.log
+# tmp
+
+pkg/sni/sni_grpc.pb.go
+pkg/sni/sni.pb.go
