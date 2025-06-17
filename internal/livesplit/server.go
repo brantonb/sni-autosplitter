@@ -332,14 +332,8 @@ func (c *Client) handleIncomingMessage(message []byte) {
 	// Handle different command types
 	if command, ok := cmd["command"].(string); ok {
 		switch command {
-		case "reset":
+		case "Reset":
 			c.handleResetCommand()
-		case "split":
-			c.handleSplitCommand()
-		case "pause":
-			c.handlePauseCommand()
-		case "resume":
-			c.handleResumeCommand()
 		default:
 			c.logger.WithField("command", command).Debug("Unhandled command from LiveSplit client")
 		}
@@ -353,39 +347,6 @@ func (c *Client) handleResetCommand() {
 			c.logger.WithError(err).Error("Failed to reset run")
 		} else {
 			c.logger.Info("Run reset by LiveSplit client")
-		}
-	}
-}
-
-// handleSplitCommand handles split commands from LiveSplit One
-func (c *Client) handleSplitCommand() {
-	if c.server.engine != nil {
-		if err := c.server.engine.ManualSplit(); err != nil {
-			c.logger.WithError(err).Error("Failed to split")
-		} else {
-			c.logger.Info("Split triggered by LiveSplit client")
-		}
-	}
-}
-
-// handlePauseCommand handles pause commands from LiveSplit One
-func (c *Client) handlePauseCommand() {
-	if c.server.engine != nil {
-		if err := c.server.engine.PauseEngine(); err != nil {
-			c.logger.WithError(err).Error("Failed to pause")
-		} else {
-			c.logger.Info("Run paused by LiveSplit client")
-		}
-	}
-}
-
-// handleResumeCommand handles resume commands from LiveSplit One
-func (c *Client) handleResumeCommand() {
-	if c.server.engine != nil {
-		if err := c.server.engine.ResumeEngine(); err != nil {
-			c.logger.WithError(err).Error("Failed to resume")
-		} else {
-			c.logger.Info("Run resumed by LiveSplit client")
 		}
 	}
 }

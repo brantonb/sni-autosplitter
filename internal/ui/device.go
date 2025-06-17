@@ -56,7 +56,7 @@ func (ds *DeviceSelector) SelectDevice(ctx context.Context) (*sni.Device, error)
 		device := devices[0]
 		ds.cli.printInfo(fmt.Sprintf("Found device: %s (%s)", device.DisplayName, device.Kind))
 
-		if ds.askConfirmation(fmt.Sprintf("Use this device? (y/n): ")) {
+		if ds.askConfirmation("Use this device? (y/n): ") {
 			return ds.testAndSelectDevice(ctx, device)
 		} else {
 			return nil, fmt.Errorf("user declined to use the only available device")
@@ -203,7 +203,8 @@ func (ds *DeviceSelector) askConfirmation(prompt string) bool {
 		case "n", "no":
 			return false
 		default:
-			ds.cli.printError("Please enter 'y' for yes or 'n' for no.")
+			// default to true
+			return true
 		}
 	}
 }
