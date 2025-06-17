@@ -412,11 +412,8 @@ func (ec *EngineController) handleStatusEvent(event engine.StatusEvent) {
 		ec.cli.printWarning("⏸️ " + event.Message)
 	case engine.StateCompleted:
 		ec.cli.printSuccess("🏁 " + event.Message)
-		// Show special completion message
-		stats := ec.engine.GetStats()
 		ec.cli.printSuccess("🎉 RUN COMPLETED!")
-		ec.cli.printSuccess(fmt.Sprintf("Final time: %v", stats.ElapsedTime.Truncate(time.Millisecond)))
-		ec.cli.printInfo("Type 'reset' to start a new run")
+		ec.cli.printInfo("Reset using LiveSplit to start a new run")
 	case engine.StateError:
 		ec.cli.printError("❌ " + event.Message)
 	default:
