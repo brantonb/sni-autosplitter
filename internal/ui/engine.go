@@ -52,15 +52,6 @@ func (ec *EngineController) InitializeEngine(
 		engineConfig,
 	)
 
-	// Set up engine callbacks
-	ec.engine.SetCallbacks(
-		ec.onSplit,
-		ec.onStart,
-		ec.onReset,
-		ec.onError,
-		ec.onStateChange,
-	)
-
 	// Create and initialize LiveSplit server
 	ec.liveSplitServer = livesplit.NewServer(ec.logger, "localhost", 1990)
 	ec.liveSplitServer.SetEngine(ec.engine)
@@ -358,8 +349,8 @@ func (ec *EngineController) handleTestCondition() error {
 
 // monitorEngineEvents monitors engine events and provides UI feedback
 func (ec *EngineController) monitorEngineEvents(ctx context.Context) {
-	splitChan := ec.engine.GetSplitChan()
-	statusChan := ec.engine.GetStatusChan()
+	splitChan := ec.engine.RegisterSplitChannel(ctx)
+	statusChan := ec.engine.RegisterStatusChannel(ctx)
 
 	for {
 		select {
@@ -381,13 +372,25 @@ func (ec *EngineController) monitorEngineEvents(ctx context.Context) {
 
 // handleSplitEvent handles split events from the engine
 func (ec *EngineController) handleSplitEvent(event engine.SplitEvent) {
-	ec.cli.printSuccess(fmt.Sprintf("🚀 SPLIT: %s (Split %d)", event.SplitName, event.SplitIndex+1))
+	switch event.Action {
+	case engine.SplitActionSplit:
+		ec.cli.printSuccess(fmt.Sprintf("🚀 SPLIT: %s (Split %d)", event.SplitName, event.SplitIndex+1))
 
-	// Show progress
-	stats := ec.engine.GetStats()
-	if stats.TotalSplits > 0 {
-		fmt.Printf("Progress: %d/%d splits (%.1f%%) completed\n",
-			event.SplitIndex+1, stats.TotalSplits, float64(event.SplitIndex+1)/float64(stats.TotalSplits)*100)
+		// Show progress for completed splits
+		stats := ec.engine.GetStats()
+		if stats.TotalSplits > 0 {
+			fmt.Printf("Progress: %d/%d splits (%.1f%%) completed\n",
+				event.SplitIndex+1, stats.TotalSplits, float64(event.SplitIndex+1)/float64(stats.TotalSplits)*100)
+		}
+
+	case engine.SplitActionSkip:
+		ec.cli.printWarning(fmt.Sprintf("⏭️  SKIP: %s (Split %d)", event.SplitName, event.SplitIndex+1))
+
+	case engine.SplitActionUndo:
+		ec.cli.printInfo(fmt.Sprintf("↩️  UNDO: %s (Split %d)", event.SplitName, event.SplitIndex+1))
+
+	default:
+		ec.cli.printInfo(fmt.Sprintf("❓ %s: %s (Split %d)", event.Action.String(), event.SplitName, event.SplitIndex+1))
 	}
 }
 
@@ -396,64 +399,28 @@ func (ec *EngineController) handleStatusEvent(event engine.StatusEvent) {
 	switch event.State {
 	case engine.StateWaitingForStart:
 		ec.cli.printInfo("⏳ " + event.Message)
+		// Show special autostart message
+		ec.cli.printInfo("Autostart enabled - waiting for start condition...")
+		ec.cli.printInfo("The run will automatically start when the game begins")
 	case engine.StateRunning:
 		ec.cli.printSuccess("▶️ " + event.Message)
+		// Show special game start message if transitioning from waiting
+		if event.Message == "Run started" {
+			ec.cli.printSuccess("🎮 Game started - run is now active!")
+		}
 	case engine.StatePaused:
 		ec.cli.printWarning("⏸️ " + event.Message)
 	case engine.StateCompleted:
 		ec.cli.printSuccess("🏁 " + event.Message)
-	case engine.StateError:
-		ec.cli.printError("❌ " + event.Message)
-	default:
-		ec.cli.printInfo("ℹ️ " + event.Message)
-	}
-}
-
-// Callback implementations for engine events
-
-func (ec *EngineController) onSplit(splitName string, splitIndex int) {
-	// This is handled via the event channel monitoring
-	ec.logger.WithFields(logrus.Fields{
-		"split_name":  splitName,
-		"split_index": splitIndex,
-	}).Info("Split callback triggered")
-}
-
-func (ec *EngineController) onStart() {
-	ec.logger.Info("Start callback triggered")
-	// Additional start handling can be added here if needed
-}
-
-func (ec *EngineController) onReset() {
-	ec.logger.Info("Reset callback triggered")
-	// Additional reset handling can be added here if needed
-}
-
-func (ec *EngineController) onError(err error) {
-	ec.logger.WithError(err).Error("Engine error callback triggered")
-	ec.cli.printError(fmt.Sprintf("Engine error: %v", err))
-}
-
-func (ec *EngineController) onStateChange(oldState, newState engine.SplitterState) {
-	ec.logger.WithFields(logrus.Fields{
-		"old_state": oldState.String(),
-		"new_state": newState.String(),
-	}).Info("State change callback triggered")
-
-	// Show special messages for important state changes
-	switch newState {
-	case engine.StateWaitingForStart:
-		ec.cli.printInfo("Autostart enabled - waiting for start condition...")
-		ec.cli.printInfo("The run will automatically start when the game begins")
-	case engine.StateRunning:
-		if oldState == engine.StateWaitingForStart {
-			ec.cli.printSuccess("🎮 Game started - run is now active!")
-		}
-	case engine.StateCompleted:
+		// Show special completion message
 		stats := ec.engine.GetStats()
 		ec.cli.printSuccess("🎉 RUN COMPLETED!")
 		ec.cli.printSuccess(fmt.Sprintf("Final time: %v", stats.ElapsedTime.Truncate(time.Millisecond)))
 		ec.cli.printInfo("Type 'reset' to start a new run")
+	case engine.StateError:
+		ec.cli.printError("❌ " + event.Message)
+	default:
+		ec.cli.printInfo("ℹ️ " + event.Message)
 	}
 }
 

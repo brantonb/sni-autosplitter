@@ -119,16 +119,6 @@ type SplitterSession struct {
 	startTime      time.Time
 	lastSplit      time.Time
 	mu             sync.RWMutex
-
-	// Event callbacks
-	onStateChange func(oldState, newState SplitterState)
-	onSplit       func(splitName string, splitIndex int)
-	onSkip        func(splitName string, splitIndex int)
-	onUndo        func(splitName string, splitIndex int)
-	onStart       func()
-	onReset       func()
-	onPause       func()
-	onResume      func()
 }
 
 // NewSplitterSession creates a new splitter session
@@ -166,16 +156,11 @@ func (ss *SplitterSession) GetAutostartState() *SplitState {
 	return ss.autostartState
 }
 
-// SetState changes the splitter state and triggers callbacks
+// SetState changes the splitter state
 func (ss *SplitterSession) SetState(newState SplitterState) {
 	ss.mu.Lock()
-	oldState := ss.state
 	ss.state = newState
 	ss.mu.Unlock()
-
-	if ss.onStateChange != nil && oldState != newState {
-		ss.onStateChange(oldState, newState)
-	}
 }
 
 // GetCurrentSplit returns the current split index
@@ -234,10 +219,6 @@ func (ss *SplitterSession) Start() {
 		state.Reset()
 	}
 	ss.mu.Unlock()
-
-	if ss.onStart != nil {
-		ss.onStart()
-	}
 }
 
 // TriggerSplit triggers a split and advances to the next one
@@ -254,7 +235,6 @@ func (ss *SplitterSession) TriggerSplit() bool {
 	}
 
 	splitName := ss.runConfig.Splits[ss.currentSplit]
-	splitIndex := ss.currentSplit
 
 	// Mark current split as completed
 	if state, exists := ss.splitStates[splitName]; exists {
@@ -267,11 +247,6 @@ func (ss *SplitterSession) TriggerSplit() bool {
 	// Check if this was the final split
 	if ss.currentSplit >= len(ss.runConfig.Splits) {
 		ss.state = StateCompleted
-	}
-
-	// Trigger callback after updating state
-	if ss.onSplit != nil {
-		go ss.onSplit(splitName, splitIndex)
 	}
 
 	return true
@@ -293,7 +268,6 @@ func (ss *SplitterSession) TriggerUndoSplit() bool {
 	ss.currentSplit--
 
 	splitName := ss.runConfig.Splits[ss.currentSplit]
-	splitIndex := ss.currentSplit
 
 	// Mark current split as incomplete
 	if state, exists := ss.splitStates[splitName]; exists {
@@ -301,11 +275,6 @@ func (ss *SplitterSession) TriggerUndoSplit() bool {
 	}
 
 	ss.lastSplit = time.Now()
-
-	// Trigger callback after updating state
-	if ss.onUndo != nil {
-		go ss.onUndo(splitName, splitIndex)
-	}
 
 	return true
 }
@@ -326,7 +295,6 @@ func (ss *SplitterSession) TriggerSkipSplit() bool {
 	ss.currentSplit++
 
 	splitName := ss.runConfig.Splits[ss.currentSplit]
-	splitIndex := ss.currentSplit
 
 	// Mark current split as incomplete
 	if state, exists := ss.splitStates[splitName]; exists {
@@ -334,11 +302,6 @@ func (ss *SplitterSession) TriggerSkipSplit() bool {
 	}
 
 	ss.lastSplit = time.Now()
-
-	// Trigger callback after updating state
-	if ss.onSkip != nil {
-		go ss.onSkip(splitName, splitIndex)
-	}
 
 	return true
 }
@@ -356,10 +319,6 @@ func (ss *SplitterSession) Reset() {
 		state.Reset()
 	}
 	ss.mu.Unlock()
-
-	if ss.onReset != nil {
-		ss.onReset()
-	}
 }
 
 // Pause pauses the splitter session
@@ -369,10 +328,6 @@ func (ss *SplitterSession) Pause() {
 		ss.state = StatePaused
 	}
 	ss.mu.Unlock()
-
-	if ss.onPause != nil {
-		ss.onPause()
-	}
 }
 
 // Resume resumes the splitter session
@@ -382,10 +337,6 @@ func (ss *SplitterSession) Resume() {
 		ss.state = StateRunning
 	}
 	ss.mu.Unlock()
-
-	if ss.onResume != nil {
-		ss.onResume()
-	}
 }
 
 // SetError sets the splitter to error state
@@ -423,30 +374,6 @@ func (ss *SplitterSession) GetRunConfig() *config.RunConfig {
 // GetGameConfig returns the game configuration
 func (ss *SplitterSession) GetGameConfig() *config.GameConfig {
 	return ss.gameConfig
-}
-
-// SetCallbacks sets the event callbacks
-func (ss *SplitterSession) SetCallbacks(
-	onStateChange func(oldState, newState SplitterState),
-	onSplit func(splitName string, splitIndex int),
-	onSkip func(splitName string, splitIndex int),
-	onUndo func(splitName string, splitIndex int),
-	onStart func(),
-	onReset func(),
-	onPause func(),
-	onResume func(),
-) {
-	ss.mu.Lock()
-	defer ss.mu.Unlock()
-
-	ss.onStateChange = onStateChange
-	ss.onSplit = onSplit
-	ss.onSkip = onSkip
-	ss.onUndo = onUndo
-	ss.onStart = onStart
-	ss.onReset = onReset
-	ss.onPause = onPause
-	ss.onResume = onResume
 }
 
 // IsRunning returns true if the splitter is actively running

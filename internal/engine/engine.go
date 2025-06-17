@@ -29,22 +29,38 @@ type SplittingEngine struct {
 	cancel  context.CancelFunc
 	mu      sync.RWMutex
 
-	// Event channels
-	splitChan  chan SplitEvent
-	statusChan chan StatusEvent
+	// Event subscribers
+	splitSubscribers  map[chan SplitEvent]struct{}
+	statusSubscribers map[chan StatusEvent]struct{}
+	subscriberMu      sync.RWMutex
+}
 
-	// Callbacks
-	onSplit       func(splitName string, splitIndex int)
-	onSkip        func(splitName string, splitIndex int)
-	onUndo        func(splitName string, splitIndex int)
-	onStart       func()
-	onReset       func()
-	onError       func(error)
-	onStateChange func(oldState, newState SplitterState)
+// SplitAction represents the type of split action
+type SplitAction int
+
+const (
+	SplitActionSplit SplitAction = iota
+	SplitActionSkip
+	SplitActionUndo
+)
+
+// String returns the string representation of the split action
+func (sa SplitAction) String() string {
+	switch sa {
+	case SplitActionSplit:
+		return "Split"
+	case SplitActionSkip:
+		return "Skip"
+	case SplitActionUndo:
+		return "Undo"
+	default:
+		return "Unknown"
+	}
 }
 
 // SplitEvent represents a split trigger event
 type SplitEvent struct {
+	Action     SplitAction
 	SplitName  string
 	SplitIndex int
 	Timestamp  time.Time
@@ -85,27 +101,15 @@ func NewSplittingEngine(
 	}
 
 	engine := &SplittingEngine{
-		logger:       logger,
-		client:       client,
-		device:       device,
-		evaluator:    NewConditionEvaluator(logger, client),
-		session:      NewSplitterSession(runConfig, gameConfig),
-		pollInterval: config.PollInterval,
-		splitChan:    make(chan SplitEvent, config.BufferSize),
-		statusChan:   make(chan StatusEvent, config.BufferSize),
+		logger:            logger,
+		client:            client,
+		device:            device,
+		evaluator:         NewConditionEvaluator(logger, client),
+		session:           NewSplitterSession(runConfig, gameConfig),
+		pollInterval:      config.PollInterval,
+		splitSubscribers:  make(map[chan SplitEvent]struct{}),
+		statusSubscribers: make(map[chan StatusEvent]struct{}),
 	}
-
-	// Set up session callbacks
-	engine.session.SetCallbacks(
-		engine.handleStateChange,
-		engine.handleSplit,
-		engine.handleSkip,
-		engine.handleUndo,
-		engine.handleStart,
-		engine.handleReset,
-		engine.handlePause,
-		engine.handleResume,
-	)
 
 	return engine
 }
@@ -149,9 +153,17 @@ func (se *SplittingEngine) Stop() error {
 	se.cancel()
 	se.running = false
 
-	// Close channels
-	close(se.splitChan)
-	close(se.statusChan)
+	// Close all subscriber channels
+	se.subscriberMu.Lock()
+	for ch := range se.splitSubscribers {
+		close(ch)
+	}
+	for ch := range se.statusSubscribers {
+		close(ch)
+	}
+	se.splitSubscribers = make(map[chan SplitEvent]struct{})
+	se.statusSubscribers = make(map[chan StatusEvent]struct{})
+	se.subscriberMu.Unlock()
 
 	return nil
 }
@@ -195,36 +207,186 @@ func (se *SplittingEngine) ManualReset() error {
 	se.logger.Info("Manual reset triggered")
 	se.session.Reset()
 	se.session.SetState(StateWaitingForStart)
+
+	// Publish reset status
+	se.logger.Info("Run reset")
 	se.publishStatus(StateWaitingForStart, "Run reset - waiting for autostart")
+
 	return nil
 }
 
-// GetSplitChan returns the split event channel
-func (se *SplittingEngine) GetSplitChan() <-chan SplitEvent {
-	return se.splitChan
+// RegisterSplitChannel registers a new split event subscriber
+func (se *SplittingEngine) RegisterSplitChannel(ctx context.Context) <-chan SplitEvent {
+	se.subscriberMu.Lock()
+	defer se.subscriberMu.Unlock()
+
+	ch := make(chan SplitEvent, 100) // Buffer size of 100 events
+	se.splitSubscribers[ch] = struct{}{}
+
+	// Start goroutine to handle context cancellation
+	go func() {
+		<-ctx.Done()
+		se.subscriberMu.Lock()
+		delete(se.splitSubscribers, ch)
+		close(ch)
+		se.subscriberMu.Unlock()
+	}()
+
+	return ch
 }
 
-// GetStatusChan returns the status event channel
-func (se *SplittingEngine) GetStatusChan() <-chan StatusEvent {
-	return se.statusChan
+// RegisterStatusChannel registers a new status event subscriber
+func (se *SplittingEngine) RegisterStatusChannel(ctx context.Context) <-chan StatusEvent {
+	se.subscriberMu.Lock()
+	defer se.subscriberMu.Unlock()
+
+	ch := make(chan StatusEvent, 100) // Buffer size of 100 events
+	se.statusSubscribers[ch] = struct{}{}
+
+	// Start goroutine to handle context cancellation
+	go func() {
+		<-ctx.Done()
+		se.subscriberMu.Lock()
+		delete(se.statusSubscribers, ch)
+		close(ch)
+		se.subscriberMu.Unlock()
+	}()
+
+	return ch
 }
 
-// SetCallbacks sets the engine event callbacks
-func (se *SplittingEngine) SetCallbacks(
-	onSplit func(splitName string, splitIndex int),
-	onStart func(),
-	onReset func(),
-	onError func(error),
-	onStateChange func(oldState, newState SplitterState),
-) {
-	se.mu.Lock()
-	defer se.mu.Unlock()
+// handleError handles errors in the engine
+func (se *SplittingEngine) handleError(err error) {
+	se.logger.WithError(err).Error("Splitting engine error")
+	se.session.SetError()
+	se.publishStatus(StateError, fmt.Sprintf("Error: %v", err))
+}
 
-	se.onSplit = onSplit
-	se.onStart = onStart
-	se.onReset = onReset
-	se.onError = onError
-	se.onStateChange = onStateChange
+// publishStatus publishes a status event
+func (se *SplittingEngine) publishStatus(state SplitterState, message string) {
+	// Create status event
+	event := StatusEvent{
+		State:     state,
+		Message:   message,
+		Timestamp: time.Now(),
+	}
+
+	// Publish the event to all subscribers
+	se.publishStatusEvent(event)
+}
+
+// publishStatusEvent publishes a status event to all subscribers
+func (se *SplittingEngine) publishStatusEvent(event StatusEvent) {
+	// Fan out to all subscribers
+	se.subscriberMu.RLock()
+	for ch := range se.statusSubscribers {
+		select {
+		case ch <- event:
+		default:
+			se.logger.Warn("Status event subscriber channel is full")
+		}
+	}
+	se.subscriberMu.RUnlock()
+}
+
+// publishSplitEvent publishes a split event to all subscribers
+func (se *SplittingEngine) publishSplitEvent(event SplitEvent) {
+	// Fan out to all subscribers
+	se.subscriberMu.RLock()
+	for ch := range se.splitSubscribers {
+		select {
+		case ch <- event:
+		default:
+			se.logger.Warn("Split event subscriber channel is full")
+		}
+	}
+	se.subscriberMu.RUnlock()
+}
+
+// GetStats returns current engine statistics
+func (se *SplittingEngine) GetStats() EngineStats {
+	session := se.session
+
+	return EngineStats{
+		State:              session.GetState(),
+		CurrentSplit:       session.GetCurrentSplit(),
+		CurrentSplitName:   session.GetCurrentSplitName(),
+		TotalSplits:        session.GetTotalSplits(),
+		Progress:           session.GetProgress(),
+		ElapsedTime:        session.GetElapsedTime(),
+		TimeSinceLastSplit: session.GetTimeSinceLastSplit(),
+		RunName:            session.GetRunConfig().Name,
+		GameName:           session.GetGameConfig().GetGameName(),
+		IsRunning:          se.IsRunning(),
+	}
+}
+
+// EngineStats contains statistics about the engine state
+type EngineStats struct {
+	State              SplitterState `json:"state"`
+	CurrentSplit       int           `json:"current_split"`
+	CurrentSplitName   string        `json:"current_split_name"`
+	TotalSplits        int           `json:"total_splits"`
+	Progress           float64       `json:"progress"`
+	ElapsedTime        time.Duration `json:"elapsed_time"`
+	TimeSinceLastSplit time.Duration `json:"time_since_last_split"`
+	RunName            string        `json:"run_name"`
+	GameName           string        `json:"game_name"`
+	IsRunning          bool          `json:"is_running"`
+}
+
+// PauseEngine pauses the splitting engine
+func (se *SplittingEngine) PauseEngine() error {
+	if se.session.GetState() != StateRunning {
+		return fmt.Errorf("cannot pause in current state: %s", se.session.GetState())
+	}
+
+	se.session.Pause()
+
+	// Handle pause event
+	se.logger.Info("Run paused")
+	se.publishStatus(StatePaused, "Run paused")
+
+	return nil
+}
+
+// ResumeEngine resumes the splitting engine
+func (se *SplittingEngine) ResumeEngine() error {
+	if se.session.GetState() != StatePaused {
+		return fmt.Errorf("cannot resume in current state: %s", se.session.GetState())
+	}
+
+	se.session.Resume()
+
+	// Handle resume event
+	se.logger.Info("Run resumed")
+	se.publishStatus(StateRunning, "Run resumed")
+
+	return nil
+}
+
+// GetCurrentSplitCondition returns the current split's condition details for debugging
+func (se *SplittingEngine) GetCurrentSplitCondition() (*config.Split, *SplitState, error) {
+	currentSplitName := se.session.GetCurrentSplitName()
+	if currentSplitName == "" {
+		return nil, nil, fmt.Errorf("no current split")
+	}
+
+	split, err := se.session.GetGameConfig().GetSplitByName(currentSplitName)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	splitState := se.session.GetSplitState(currentSplitName)
+	return split, splitState, nil
+}
+
+// TestCondition tests a specific condition without affecting the run state
+func (se *SplittingEngine) TestCondition(split *config.Split) (bool, error) {
+	// Create a temporary split state for testing
+	tempState := NewSplitState()
+
+	return se.evaluator.EvaluateComplexCondition(se.ctx, se.device.URI, split, tempState)
 }
 
 // runLoop is the main engine loop that handles condition checking
@@ -277,6 +439,9 @@ func (se *SplittingEngine) checkAutostart() error {
 	if result {
 		se.logger.Info("Autostart condition met - starting run")
 		se.session.Start()
+
+		// Handle the start event
+		se.logger.Info("Run started")
 		se.publishStatus(StateRunning, "Run started")
 	}
 
@@ -319,9 +484,28 @@ func (se *SplittingEngine) checkCurrentSplit() error {
 
 // triggerSplit triggers a split and handles the transition
 func (se *SplittingEngine) triggerSplit() error {
+	// Get split info before triggering
+	splitName := se.session.GetCurrentSplitName()
+	splitIndex := se.session.GetCurrentSplit()
+
 	if !se.session.TriggerSplit() {
 		return fmt.Errorf("failed to trigger split")
 	}
+
+	// Log and publish the split event
+	se.logger.WithFields(logrus.Fields{
+		"split_name":  splitName,
+		"split_index": splitIndex,
+		"total":       se.session.GetTotalSplits(),
+	}).Info("Split triggered")
+
+	event := SplitEvent{
+		Action:     SplitActionSplit,
+		SplitName:  splitName,
+		SplitIndex: splitIndex,
+		Timestamp:  time.Now(),
+	}
+	se.publishSplitEvent(event)
 
 	// Check if run is completed
 	if se.session.GetState() == StateCompleted {
@@ -334,213 +518,57 @@ func (se *SplittingEngine) triggerSplit() error {
 
 // triggerUndoSplit triggers an undo split and handles the transition
 func (se *SplittingEngine) triggerUndoSplit() error {
+	// Get the split we're about to undo (which is the previous split)
+	splitIndex := se.session.GetCurrentSplit() - 1
+	if splitIndex < 0 {
+		return fmt.Errorf("no split to undo")
+	}
+	splitName := se.session.GetRunConfig().Splits[splitIndex]
+
 	if !se.session.TriggerUndoSplit() {
 		return fmt.Errorf("failed to trigger undo split")
 	}
+
+	// Log and publish the undo event
+	se.logger.WithFields(logrus.Fields{
+		"split_name":  splitName,
+		"split_index": splitIndex,
+	}).Info("Split undone")
+
+	event := SplitEvent{
+		Action:     SplitActionUndo,
+		SplitName:  splitName,
+		SplitIndex: splitIndex,
+		Timestamp:  time.Now(),
+	}
+	se.publishSplitEvent(event)
 
 	return nil
 }
 
 // triggerSkipSplit triggers a skip split and handles the transition
 func (se *SplittingEngine) triggerSkipSplit() error {
+	// Get split info before triggering
+	splitName := se.session.GetCurrentSplitName()
+	splitIndex := se.session.GetCurrentSplit()
+
 	if !se.session.TriggerSkipSplit() {
 		return fmt.Errorf("failed to trigger skip split")
 	}
 
-	return nil
-}
-
-// handleStateChange handles state change events from the session
-func (se *SplittingEngine) handleStateChange(oldState, newState SplitterState) {
-	se.logger.WithFields(logrus.Fields{
-		"old_state": oldState.String(),
-		"new_state": newState.String(),
-	}).Info("Splitter state changed")
-
-	se.publishStatus(newState, fmt.Sprintf("State changed from %s to %s", oldState.String(), newState.String()))
-
-	if se.onStateChange != nil {
-		go se.onStateChange(oldState, newState)
-	}
-}
-
-// handleSplit handles split events from the session
-func (se *SplittingEngine) handleSplit(splitName string, splitIndex int) {
-	se.logger.WithFields(logrus.Fields{
-		"split_name":  splitName,
-		"split_index": splitIndex,
-		"total":       se.session.GetTotalSplits(),
-	}).Info("Split triggered")
-
-	// Publish split event
-	select {
-	case se.splitChan <- SplitEvent{
-		SplitName:  splitName,
-		SplitIndex: splitIndex,
-		Timestamp:  time.Now(),
-	}:
-	default:
-		se.logger.Warn("Split event channel is full")
-	}
-
-	if se.onSplit != nil {
-		go se.onSplit(splitName, splitIndex)
-	}
-}
-
-// handleStart handles start events from the session
-func (se *SplittingEngine) handleStart() {
-	se.logger.Info("Run started")
-	se.publishStatus(StateRunning, "Run started")
-
-	if se.onStart != nil {
-		go se.onStart()
-	}
-}
-
-// handleReset handles reset events from the session
-func (se *SplittingEngine) handleReset() {
-	se.logger.Info("Run reset")
-
-	se.publishStatus(StateWaitingForStart, "Run reset - waiting for autostart")
-
-	if se.onReset != nil {
-		go se.onReset()
-	}
-}
-
-// handlePause handles pause events from the session
-func (se *SplittingEngine) handlePause() {
-	se.logger.Info("Run paused")
-	se.publishStatus(StatePaused, "Run paused")
-}
-
-// handleResume handles resume events from the session
-func (se *SplittingEngine) handleResume() {
-	se.logger.Info("Run resumed")
-	se.publishStatus(StateRunning, "Run resumed")
-}
-
-// handleError handles errors in the engine
-func (se *SplittingEngine) handleError(err error) {
-	se.logger.WithError(err).Error("Splitting engine error")
-	se.session.SetError()
-	se.publishStatus(StateError, fmt.Sprintf("Error: %v", err))
-
-	if se.onError != nil {
-		go se.onError(err)
-	}
-}
-
-// handleSkip handles skip events from the session
-func (se *SplittingEngine) handleSkip(splitName string, splitIndex int) {
+	// Log and publish the skip event
 	se.logger.WithFields(logrus.Fields{
 		"split_name":  splitName,
 		"split_index": splitIndex,
 	}).Info("Split skipped")
 
-	if se.onSkip != nil {
-		go se.onSkip(splitName, splitIndex)
+	event := SplitEvent{
+		Action:     SplitActionSkip,
+		SplitName:  splitName,
+		SplitIndex: splitIndex,
+		Timestamp:  time.Now(),
 	}
-}
+	se.publishSplitEvent(event)
 
-// handleUndo handles undo events from the session
-func (se *SplittingEngine) handleUndo(splitName string, splitIndex int) {
-	se.logger.WithFields(logrus.Fields{
-		"split_name":  splitName,
-		"split_index": splitIndex,
-	}).Info("Split undone")
-
-	if se.onUndo != nil {
-		go se.onUndo(splitName, splitIndex)
-	}
-}
-
-// publishStatus publishes a status event
-func (se *SplittingEngine) publishStatus(state SplitterState, message string) {
-	select {
-	case se.statusChan <- StatusEvent{
-		State:     state,
-		Message:   message,
-		Timestamp: time.Now(),
-	}:
-	default:
-		se.logger.Warn("Status event channel is full")
-	}
-}
-
-// GetStats returns current engine statistics
-func (se *SplittingEngine) GetStats() EngineStats {
-	session := se.session
-
-	return EngineStats{
-		State:              session.GetState(),
-		CurrentSplit:       session.GetCurrentSplit(),
-		CurrentSplitName:   session.GetCurrentSplitName(),
-		TotalSplits:        session.GetTotalSplits(),
-		Progress:           session.GetProgress(),
-		ElapsedTime:        session.GetElapsedTime(),
-		TimeSinceLastSplit: session.GetTimeSinceLastSplit(),
-		RunName:            session.GetRunConfig().Name,
-		GameName:           session.GetGameConfig().GetGameName(),
-		IsRunning:          se.IsRunning(),
-	}
-}
-
-// EngineStats contains statistics about the engine state
-type EngineStats struct {
-	State              SplitterState `json:"state"`
-	CurrentSplit       int           `json:"current_split"`
-	CurrentSplitName   string        `json:"current_split_name"`
-	TotalSplits        int           `json:"total_splits"`
-	Progress           float64       `json:"progress"`
-	ElapsedTime        time.Duration `json:"elapsed_time"`
-	TimeSinceLastSplit time.Duration `json:"time_since_last_split"`
-	RunName            string        `json:"run_name"`
-	GameName           string        `json:"game_name"`
-	IsRunning          bool          `json:"is_running"`
-}
-
-// PauseEngine pauses the splitting engine
-func (se *SplittingEngine) PauseEngine() error {
-	if se.session.GetState() != StateRunning {
-		return fmt.Errorf("cannot pause in current state: %s", se.session.GetState())
-	}
-
-	se.session.Pause()
 	return nil
-}
-
-// ResumeEngine resumes the splitting engine
-func (se *SplittingEngine) ResumeEngine() error {
-	if se.session.GetState() != StatePaused {
-		return fmt.Errorf("cannot resume in current state: %s", se.session.GetState())
-	}
-
-	se.session.Resume()
-	return nil
-}
-
-// GetCurrentSplitCondition returns the current split's condition details for debugging
-func (se *SplittingEngine) GetCurrentSplitCondition() (*config.Split, *SplitState, error) {
-	currentSplitName := se.session.GetCurrentSplitName()
-	if currentSplitName == "" {
-		return nil, nil, fmt.Errorf("no current split")
-	}
-
-	split, err := se.session.GetGameConfig().GetSplitByName(currentSplitName)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	splitState := se.session.GetSplitState(currentSplitName)
-	return split, splitState, nil
-}
-
-// TestCondition tests a specific condition without affecting the run state
-func (se *SplittingEngine) TestCondition(split *config.Split) (bool, error) {
-	// Create a temporary split state for testing
-	tempState := NewSplitState()
-
-	return se.evaluator.EvaluateComplexCondition(se.ctx, se.device.URI, split, tempState)
 }

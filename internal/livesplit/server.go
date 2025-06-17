@@ -211,8 +211,8 @@ func (s *Server) monitorEngineEvents(ctx context.Context) {
 		return
 	}
 
-	splitChan := s.engine.GetSplitChan()
-	statusChan := s.engine.GetStatusChan()
+	splitChan := s.engine.RegisterSplitChannel(ctx)
+	statusChan := s.engine.RegisterStatusChannel(ctx)
 
 	for {
 		select {
@@ -234,10 +234,11 @@ func (s *Server) monitorEngineEvents(ctx context.Context) {
 
 // handleSplitEvent handles split events from the engine
 func (s *Server) handleSplitEvent(event engine.SplitEvent) {
-	s.logger.WithField("split", event.SplitName).Info("Broadcasting split to LiveSplit clients")
-
-	// Send split command
-	s.sendCommand("split")
+	if event.Action == engine.SplitActionSplit {
+		s.logger.WithField("split", event.SplitName).Info("Broadcasting split to LiveSplit clients")
+		// Send split command
+		s.sendCommand("split")
+	}
 }
 
 // handleStatusEvent handles status events from the engine
@@ -336,7 +337,7 @@ func (c *Client) writePump() {
 // LiveSplit One doesn't send us commands, only events. These events could reflect
 // LiveSplit catching up with commands we sent, or they could reflect something the
 // user did in LiveSplit. We should always assume that split events correspond to
-// commands we sent, and that skip events are user-initiated.
+// commands we sent, and that skip/undo events are user-initiated via LiveSplit.
 func (c *Client) handleIncomingMessage(message []byte) {
 	c.logger.WithField("message", string(message)).Info("Received message from LiveSplit client")
 
