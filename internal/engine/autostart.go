@@ -18,30 +18,21 @@ type AutostartDetector struct {
 	evaluator *ConditionEvaluator
 
 	// Configuration
-	debounceTime  time.Duration
-	stabilityTime time.Duration
-	maxRetries    int
+	maxRetries int
 
 	// State tracking
-	lastResult       bool
-	lastChangeTime   time.Time
-	consecutiveCount int
-	enabled          bool
+	enabled bool
 }
 
 // AutostartConfig contains configuration for autostart detection
 type AutostartConfig struct {
-	DebounceTime  time.Duration // Time to wait for condition stability
-	StabilityTime time.Duration // Time condition must remain stable
-	MaxRetries    int           // Maximum consecutive failed reads before giving up
+	MaxRetries int // Maximum consecutive failed reads before giving up
 }
 
 // DefaultAutostartConfig returns default autostart configuration
 func DefaultAutostartConfig() *AutostartConfig {
 	return &AutostartConfig{
-		DebounceTime:  time.Millisecond * 100,
-		StabilityTime: time.Millisecond * 300,
-		MaxRetries:    5,
+		MaxRetries: 5,
 	}
 }
 
@@ -52,17 +43,15 @@ func NewAutostartDetector(logger *logrus.Logger, client *sni.Client, config *Aut
 	}
 
 	return &AutostartDetector{
-		logger:        logger,
-		client:        client,
-		evaluator:     NewConditionEvaluator(logger, client),
-		debounceTime:  config.DebounceTime,
-		stabilityTime: config.StabilityTime,
-		maxRetries:    config.MaxRetries,
-		enabled:       true,
+		logger:     logger,
+		client:     client,
+		evaluator:  NewConditionEvaluator(logger, client),
+		maxRetries: config.MaxRetries,
+		enabled:    true,
 	}
 }
 
-// CheckAutostart checks if autostart conditions are met with debouncing
+// CheckAutostart checks if autostart conditions are met
 func (ad *AutostartDetector) CheckAutostart(ctx context.Context, deviceURI string, autostart *config.Split, state *SplitState) (bool, error) {
 	if !ad.enabled {
 		return false, nil
@@ -78,8 +67,7 @@ func (ad *AutostartDetector) CheckAutostart(ctx context.Context, deviceURI strin
 		return false, fmt.Errorf("failed to evaluate autostart condition: %w", err)
 	}
 
-	// Apply debouncing logic
-	return ad.applyDebouncing(result), nil
+	return result, nil
 }
 
 // evaluateAutostartWithRetry evaluates autostart condition with retry logic
@@ -109,49 +97,6 @@ func (ad *AutostartDetector) evaluateAutostartWithRetry(ctx context.Context, dev
 	return false, fmt.Errorf("autostart evaluation failed after %d attempts: %w", ad.maxRetries, lastErr)
 }
 
-// applyDebouncing applies debouncing logic to prevent false triggers
-func (ad *AutostartDetector) applyDebouncing(currentResult bool) bool {
-	now := time.Now()
-
-	// Check if result has changed
-	if currentResult != ad.lastResult {
-		ad.logger.WithFields(logrus.Fields{
-			"previous": ad.lastResult,
-			"current":  currentResult,
-		}).Debug("Autostart condition result changed")
-
-		ad.lastResult = currentResult
-		ad.lastChangeTime = now
-		ad.consecutiveCount = 1
-		return false // Don't trigger immediately on change
-	}
-
-	// Result is stable - increment consecutive count
-	ad.consecutiveCount++
-
-	// If condition is false, no need to debounce
-	if !currentResult {
-		return false
-	}
-
-	// Check if condition has been stable long enough
-	timeSinceChange := now.Sub(ad.lastChangeTime)
-	if timeSinceChange >= ad.stabilityTime {
-		ad.logger.WithFields(logrus.Fields{
-			"stability_time": timeSinceChange,
-			"consecutive":    ad.consecutiveCount,
-		}).Info("Autostart condition is stable and met")
-		return true
-	}
-
-	ad.logger.WithFields(logrus.Fields{
-		"time_remaining": ad.stabilityTime - timeSinceChange,
-		"consecutive":    ad.consecutiveCount,
-	}).Debug("Autostart condition met but waiting for stability")
-
-	return false
-}
-
 // Enable enables autostart detection
 func (ad *AutostartDetector) Enable() {
 	ad.enabled = true
@@ -171,37 +116,19 @@ func (ad *AutostartDetector) IsEnabled() bool {
 
 // Reset resets the autostart detector state
 func (ad *AutostartDetector) Reset() {
-	ad.lastResult = false
-	ad.lastChangeTime = time.Time{}
-	ad.consecutiveCount = 0
 	ad.logger.Debug("Autostart detector state reset")
 }
 
 // GetStatus returns the current autostart detector status
 func (ad *AutostartDetector) GetStatus() AutostartStatus {
-	timeSinceChange := time.Duration(0)
-	if !ad.lastChangeTime.IsZero() {
-		timeSinceChange = time.Since(ad.lastChangeTime)
-	}
-
 	return AutostartStatus{
-		Enabled:          ad.enabled,
-		LastResult:       ad.lastResult,
-		TimeSinceChange:  timeSinceChange,
-		ConsecutiveCount: ad.consecutiveCount,
-		IsStable:         timeSinceChange >= ad.stabilityTime,
-		StabilityTime:    ad.stabilityTime,
+		Enabled: ad.enabled,
 	}
 }
 
 // AutostartStatus contains status information about autostart detection
 type AutostartStatus struct {
-	Enabled          bool          `json:"enabled"`
-	LastResult       bool          `json:"last_result"`
-	TimeSinceChange  time.Duration `json:"time_since_change"`
-	ConsecutiveCount int           `json:"consecutive_count"`
-	IsStable         bool          `json:"is_stable"`
-	StabilityTime    time.Duration `json:"stability_time"`
+	Enabled bool `json:"enabled"`
 }
 
 // ValidateAutostartCondition validates that an autostart condition is properly configured
@@ -257,14 +184,10 @@ func (ad *AutostartDetector) SetConfiguration(config *AutostartConfig) {
 		config = DefaultAutostartConfig()
 	}
 
-	ad.debounceTime = config.DebounceTime
-	ad.stabilityTime = config.StabilityTime
 	ad.maxRetries = config.MaxRetries
 
 	ad.logger.WithFields(logrus.Fields{
-		"debounce_time":  ad.debounceTime,
-		"stability_time": ad.stabilityTime,
-		"max_retries":    ad.maxRetries,
+		"max_retries": ad.maxRetries,
 	}).Info("Autostart detector configuration updated")
 
 	// Reset state to apply new configuration
@@ -274,8 +197,6 @@ func (ad *AutostartDetector) SetConfiguration(config *AutostartConfig) {
 // GetConfiguration returns the current autostart detector configuration
 func (ad *AutostartDetector) GetConfiguration() *AutostartConfig {
 	return &AutostartConfig{
-		DebounceTime:  ad.debounceTime,
-		StabilityTime: ad.stabilityTime,
-		MaxRetries:    ad.maxRetries,
+		MaxRetries: ad.maxRetries,
 	}
 }
