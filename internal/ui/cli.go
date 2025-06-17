@@ -17,17 +17,19 @@ import (
 
 // CLI handles the command-line interface for the autosplitter
 type CLI struct {
-	logger       *logrus.Logger
-	configLoader *config.ConfigLoader
-	scanner      *bufio.Scanner
+	logger          *logrus.Logger
+	configLoader    *config.ConfigLoader
+	scanner         *bufio.Scanner
+	enableManualOps bool
 }
 
 // NewCLI creates a new CLI interface
-func NewCLI(logger *logrus.Logger, gamesDir, runsDir string) *CLI {
+func NewCLI(logger *logrus.Logger, gamesDir, runsDir string, enableManualOps bool) *CLI {
 	return &CLI{
-		logger:       logger,
-		configLoader: config.NewConfigLoader(logger, gamesDir, runsDir),
-		scanner:      bufio.NewScanner(os.Stdin),
+		logger:          logger,
+		configLoader:    config.NewConfigLoader(logger, gamesDir, runsDir),
+		scanner:         bufio.NewScanner(os.Stdin),
+		enableManualOps: enableManualOps,
 	}
 }
 
@@ -124,7 +126,7 @@ func (c *CLI) Start(runName string) error {
 	// Phase 3: Initialize and start splitting engine
 	c.printInfo("Initializing splitting engine...")
 
-	engineController := NewEngineController(c.logger, c)
+	engineController := NewEngineController(c.logger, c, c.enableManualOps)
 
 	// Validate configuration before initializing engine
 	if err := engineController.ValidateConfiguration(runConfig, gameConfig); err != nil {
@@ -142,11 +144,6 @@ func (c *CLI) Start(runName string) error {
 	}
 	defer engineController.StopEngine()
 
-	c.printSuccess("Phase 3 complete: Splitting engine active!")
-
-	// TODO: Phase 4 - Start LiveSplit One server
-	c.printInfo("Phase 4 coming soon: LiveSplit One WebSocket server...")
-
 	// Enter interactive mode
 	c.printInfo("Entering interactive mode...")
 	c.printInfo("You can now control the autosplitter or let it run automatically")
@@ -154,12 +151,6 @@ func (c *CLI) Start(runName string) error {
 	if err := engineController.RunInteractiveMode(ctx); err != nil {
 		c.printWarning(fmt.Sprintf("Interactive mode ended: %v", err))
 	}
-
-	// TODO: Phase 4 - Start LiveSplit One server
-	c.printInfo("Phase 4 coming soon: LiveSplit One WebSocket server...")
-
-	c.printInfo("Setup complete. Press Enter to exit.")
-	c.scanner.Scan()
 
 	return nil
 }

@@ -20,13 +20,15 @@ type EngineController struct {
 	cli             *CLI
 	engine          *engine.SplittingEngine
 	liveSplitServer *livesplit.Server
+	enableManualOps bool // Feature flag for manual operations (split, reset, pause, resume)
 }
 
 // NewEngineController creates a new engine controller
-func NewEngineController(logger *logrus.Logger, cli *CLI) *EngineController {
+func NewEngineController(logger *logrus.Logger, cli *CLI, enableManualOps bool) *EngineController {
 	return &EngineController{
-		logger: logger,
-		cli:    cli,
+		logger:          logger,
+		cli:             cli,
+		enableManualOps: enableManualOps,
 	}
 }
 
@@ -155,14 +157,34 @@ func (ec *EngineController) handleCommand(ctx context.Context, command string) e
 	case "s", "status":
 		ec.displayEngineStatus()
 	case "split":
+		if !ec.enableManualOps {
+			ec.cli.printError("Manual split operations are disabled")
+			return nil
+		}
 		return ec.handleManualSplit()
 	case "reset":
+		if !ec.enableManualOps {
+			ec.cli.printError("Manual reset operations are disabled")
+			return nil
+		}
 		return ec.handleManualReset()
 	case "pause":
+		if !ec.enableManualOps {
+			ec.cli.printError("Manual pause operations are disabled")
+			return nil
+		}
 		return ec.handlePause()
 	case "resume":
+		if !ec.enableManualOps {
+			ec.cli.printError("Manual resume operations are disabled")
+			return nil
+		}
 		return ec.handleResume()
 	case "test":
+		if !ec.enableManualOps {
+			ec.cli.printError("Manual test condition operations are disabled")
+			return nil
+		}
 		return ec.handleTestCondition()
 	case "stats":
 		ec.displayDetailedStats()
@@ -182,13 +204,17 @@ func (ec *EngineController) displayCommands() {
 	fmt.Println("\nAvailable commands:")
 	fmt.Println("  h, help    - Show this help")
 	fmt.Println("  s, status  - Show current status")
-	fmt.Println("  split      - Manually trigger a split")
-	fmt.Println("  reset      - Reset the run")
-	fmt.Println("  pause      - Pause the run")
-	fmt.Println("  resume     - Resume the run")
-	fmt.Println("  test       - Test current split condition")
 	fmt.Println("  stats      - Show detailed statistics")
 	fmt.Println("  q, quit    - Exit interactive mode")
+
+	if ec.enableManualOps {
+		fmt.Println("\nDevelopment/Manual commands:")
+		fmt.Println("  split      - Manually trigger a split")
+		fmt.Println("  reset      - Reset the run")
+		fmt.Println("  pause      - Pause the run")
+		fmt.Println("  resume     - Resume the run")
+		fmt.Println("  test       - Test current split condition")
+	}
 }
 
 // displayEngineStatus shows the current engine status
