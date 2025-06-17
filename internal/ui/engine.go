@@ -149,6 +149,16 @@ func (ec *EngineController) RunInteractiveMode(ctx context.Context) error {
 	return nil
 }
 
+// executeIfManualOpsEnabled executes the given function if manual operations are enabled,
+// otherwise prints the provided error message
+func (ec *EngineController) executeIfManualOpsEnabled(errorMsg string, fn func() error) error {
+	if !ec.enableManualOps {
+		ec.cli.printError(errorMsg)
+		return nil
+	}
+	return fn()
+}
+
 // handleCommand processes interactive commands
 func (ec *EngineController) handleCommand(ctx context.Context, command string) error {
 	switch command {
@@ -157,35 +167,15 @@ func (ec *EngineController) handleCommand(ctx context.Context, command string) e
 	case "s", "status":
 		ec.displayEngineStatus()
 	case "split":
-		if !ec.enableManualOps {
-			ec.cli.printError("Manual split operations are disabled")
-			return nil
-		}
-		return ec.handleManualSplit()
+		return ec.executeIfManualOpsEnabled("Manual split operations are disabled", ec.handleManualSplit)
 	case "reset":
-		if !ec.enableManualOps {
-			ec.cli.printError("Manual reset operations are disabled")
-			return nil
-		}
-		return ec.handleManualReset()
+		return ec.executeIfManualOpsEnabled("Manual reset operations are disabled", ec.handleManualReset)
 	case "pause":
-		if !ec.enableManualOps {
-			ec.cli.printError("Manual pause operations are disabled")
-			return nil
-		}
-		return ec.handlePause()
+		return ec.executeIfManualOpsEnabled("Manual pause operations are disabled", ec.handlePause)
 	case "resume":
-		if !ec.enableManualOps {
-			ec.cli.printError("Manual resume operations are disabled")
-			return nil
-		}
-		return ec.handleResume()
+		return ec.executeIfManualOpsEnabled("Manual resume operations are disabled", ec.handleResume)
 	case "test":
-		if !ec.enableManualOps {
-			ec.cli.printError("Manual test condition operations are disabled")
-			return nil
-		}
-		return ec.handleTestCondition()
+		return ec.executeIfManualOpsEnabled("Manual test condition operations are disabled", ec.handleTestCondition)
 	case "stats":
 		ec.displayDetailedStats()
 	case "q", "quit":
