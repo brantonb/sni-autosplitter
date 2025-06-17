@@ -8,9 +8,9 @@ import (
 
 // GameConfig represents a game configuration file compatible with USB2SNES format
 type GameConfig struct {
-	Name        string  `json:"name,omitempty"` // Optional name field
-	Game        string  `json:"game,omitempty"` // USB2SNES uses "game" field
-	Autostart   *Split  `json:"autostart,omitempty"`
+	Name        string  `json:"name,omitempty"` // Optional name field, generally should match filename base
+	Game        string  `json:"game,omitempty"`
+	Autostart   Split   `json:"autostart"`
 	Definitions []Split `json:"definitions"`
 	// Note: We're not including IGT since SNES games use real-time
 }
@@ -24,7 +24,6 @@ type Split struct {
 	Note    string  `json:"note,omitempty"`
 	More    []Split `json:"more,omitempty"`
 	Next    []Split `json:"next,omitempty"`
-	Active  string  `json:"active,omitempty"`
 
 	// Cached parsed values (not serialized)
 	addressInt uint32 `json:"-"`
@@ -56,11 +55,9 @@ func (gc *GameConfig) Validate() error {
 		return fmt.Errorf("game config missing both 'name' and 'game' fields")
 	}
 
-	// Validate autostart if present
-	if gc.Autostart != nil {
-		if err := gc.Autostart.validate("autostart", false); err != nil {
-			return fmt.Errorf("autostart validation failed: %w", err)
-		}
+	// Validate autostart
+	if err := (&gc.Autostart).validate("autostart", false); err != nil {
+		return fmt.Errorf("autostart validation failed: %w", err)
 	}
 
 	// Validate all definitions

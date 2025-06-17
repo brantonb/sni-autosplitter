@@ -48,9 +48,8 @@ func (cl *ConfigLoader) LoadGameConfig(gameName string) (*GameConfig, error) {
 	}
 
 	cl.logger.WithFields(logrus.Fields{
-		"game":          gameConfig.Name,
-		"definitions":   len(gameConfig.Definitions),
-		"has_autostart": gameConfig.Autostart != nil,
+		"game":        gameConfig.Name,
+		"definitions": len(gameConfig.Definitions),
 	}).Info("Game config loaded successfully")
 
 	return &gameConfig, nil

@@ -75,8 +75,7 @@ func (ss *SplitState) TimeSinceUpdate() time.Duration {
 type SplitterState int
 
 const (
-	StateIdle SplitterState = iota
-	StateWaitingForStart
+	StateWaitingForStart SplitterState = iota
 	StateRunning
 	StatePaused
 	StateCompleted
@@ -86,8 +85,6 @@ const (
 // String returns the string representation of the splitter state
 func (s SplitterState) String() string {
 	switch s {
-	case StateIdle:
-		return "Idle"
 	case StateWaitingForStart:
 		return "Waiting for Start"
 	case StateRunning:
@@ -105,14 +102,15 @@ func (s SplitterState) String() string {
 
 // SplitterSession manages the state of an autosplitting session
 type SplitterSession struct {
-	runConfig    *config.RunConfig
-	gameConfig   *config.GameConfig
-	state        SplitterState
-	currentSplit int
-	splitStates  map[string]*SplitState
-	startTime    time.Time
-	lastSplit    time.Time
-	mu           sync.RWMutex
+	runConfig      *config.RunConfig
+	gameConfig     *config.GameConfig
+	state          SplitterState
+	currentSplit   int
+	splitStates    map[string]*SplitState
+	autostartState *SplitState
+	startTime      time.Time
+	lastSplit      time.Time
+	mu             sync.RWMutex
 
 	// Event callbacks
 	onStateChange func(oldState, newState SplitterState)
@@ -128,7 +126,7 @@ func NewSplitterSession(runConfig *config.RunConfig, gameConfig *config.GameConf
 	session := &SplitterSession{
 		runConfig:    runConfig,
 		gameConfig:   gameConfig,
-		state:        StateIdle,
+		state:        StateWaitingForStart,
 		currentSplit: 0,
 		splitStates:  make(map[string]*SplitState),
 	}
@@ -138,10 +136,8 @@ func NewSplitterSession(runConfig *config.RunConfig, gameConfig *config.GameConf
 		session.splitStates[splitName] = NewSplitState()
 	}
 
-	// Initialize autostart state if present
-	if gameConfig.Autostart != nil {
-		session.splitStates["__autostart__"] = NewSplitState()
-	}
+	// Initialize autostart state
+	session.autostartState = NewSplitState()
 
 	return session
 }
@@ -151,6 +147,13 @@ func (ss *SplitterSession) GetState() SplitterState {
 	ss.mu.RLock()
 	defer ss.mu.RUnlock()
 	return ss.state
+}
+
+// GetAutostartState returns the state of the autostart condition
+func (ss *SplitterSession) GetAutostartState() *SplitState {
+	ss.mu.RLock()
+	defer ss.mu.RUnlock()
+	return ss.autostartState
 }
 
 // SetState changes the splitter state and triggers callbacks
@@ -267,7 +270,7 @@ func (ss *SplitterSession) TriggerSplit() bool {
 // Reset resets the splitter session
 func (ss *SplitterSession) Reset() {
 	ss.mu.Lock()
-	ss.state = StateIdle
+	ss.state = StateWaitingForStart
 	ss.currentSplit = 0
 	ss.startTime = time.Time{}
 	ss.lastSplit = time.Time{}
@@ -371,10 +374,10 @@ func (ss *SplitterSession) IsRunning() bool {
 	return ss.GetState() == StateRunning
 }
 
-// CanStart returns true if the splitter can be started
+// CanStart returns true if the splitter can be started.
+// This is currently only true when the splitter is in the waiting for start state.
 func (ss *SplitterSession) CanStart() bool {
-	state := ss.GetState()
-	return state == StateIdle || state == StateCompleted || state == StateError
+	return ss.GetState() == StateWaitingForStart
 }
 
 // CanSplit returns true if a split can be triggered

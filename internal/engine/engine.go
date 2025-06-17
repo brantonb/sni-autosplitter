@@ -125,13 +125,8 @@ func (se *SplittingEngine) Start(ctx context.Context) error {
 	go se.runLoop()
 
 	// Initialize state
-	if se.session.GetGameConfig().Autostart != nil && se.session.GetGameConfig().Autostart.Active == "1" {
-		se.session.SetState(StateWaitingForStart)
-		se.logger.Info("Autostart enabled - waiting for start condition")
-	} else {
-		se.session.SetState(StateIdle)
-		se.logger.Info("Autostart disabled - manual start required")
-	}
+	se.session.SetState(StateWaitingForStart)
+	se.logger.Info("Autostart enabled - waiting for start condition")
 
 	return nil
 }
@@ -169,17 +164,6 @@ func (se *SplittingEngine) GetSession() *SplitterSession {
 	return se.session
 }
 
-// ManualStart manually starts the run (when autostart is disabled)
-func (se *SplittingEngine) ManualStart() error {
-	if !se.session.CanStart() {
-		return fmt.Errorf("cannot start in current state: %s", se.session.GetState())
-	}
-
-	se.logger.Info("Manual start triggered")
-	se.session.Start()
-	return nil
-}
-
 // ManualSplit manually triggers a split
 func (se *SplittingEngine) ManualSplit() error {
 	if !se.session.CanSplit() {
@@ -194,14 +178,7 @@ func (se *SplittingEngine) ManualSplit() error {
 func (se *SplittingEngine) ManualReset() error {
 	se.logger.Info("Manual reset triggered")
 	se.session.Reset()
-
-	// Set appropriate state based on autostart configuration
-	if se.session.GetGameConfig().Autostart != nil && se.session.GetGameConfig().Autostart.Active == "1" {
-		se.session.SetState(StateWaitingForStart)
-	} else {
-		se.session.SetState(StateIdle)
-	}
-
+	se.session.SetState(StateWaitingForStart)
 	return nil
 }
 
@@ -262,7 +239,7 @@ func (se *SplittingEngine) tick() error {
 		return se.checkAutostart()
 	case StateRunning:
 		return se.checkCurrentSplit()
-	case StateIdle, StatePaused, StateCompleted, StateError:
+	case StatePaused, StateCompleted, StateError:
 		// No action needed in these states
 		return nil
 	default:
@@ -273,13 +250,9 @@ func (se *SplittingEngine) tick() error {
 // checkAutostart checks if the autostart condition is met
 func (se *SplittingEngine) checkAutostart() error {
 	autostart := se.session.GetGameConfig().Autostart
-	if autostart == nil {
-		return fmt.Errorf("autostart is nil but state is waiting for start")
-	}
+	autostartState := se.session.GetAutostartState()
 
-	autostartState := se.session.GetSplitState("__autostart__")
-
-	result, err := se.evaluator.EvaluateComplexCondition(se.ctx, se.device.URI, autostart, autostartState)
+	result, err := se.evaluator.EvaluateComplexCondition(se.ctx, se.device.URI, &autostart, autostartState)
 	if err != nil {
 		return fmt.Errorf("failed to evaluate autostart condition: %w", err)
 	}
@@ -393,15 +366,7 @@ func (se *SplittingEngine) handleStart() {
 func (se *SplittingEngine) handleReset() {
 	se.logger.Info("Run reset")
 
-	// Determine the appropriate state after reset
-	var newState SplitterState
-	if se.session.GetGameConfig().Autostart != nil && se.session.GetGameConfig().Autostart.Active == "1" {
-		newState = StateWaitingForStart
-		se.publishStatus(newState, "Run reset - waiting for autostart")
-	} else {
-		newState = StateIdle
-		se.publishStatus(newState, "Run reset - ready for manual start")
-	}
+	se.publishStatus(StateWaitingForStart, "Run reset - waiting for autostart")
 
 	if se.onReset != nil {
 		go se.onReset()

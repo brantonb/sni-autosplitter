@@ -72,12 +72,6 @@ func (ad *AutostartDetector) CheckAutostart(ctx context.Context, deviceURI strin
 		return false, fmt.Errorf("autostart configuration is nil")
 	}
 
-	// Check if autostart is active
-	if autostart.Active != "1" {
-		ad.logger.Debug("Autostart is disabled in configuration")
-		return false, nil
-	}
-
 	// Evaluate the autostart condition
 	result, err := ad.evaluateAutostartWithRetry(ctx, deviceURI, autostart, state)
 	if err != nil {

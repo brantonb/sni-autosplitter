@@ -135,8 +135,6 @@ func (ec *EngineController) handleCommand(ctx context.Context, command string) e
 		ec.displayCommands()
 	case "s", "status":
 		ec.displayEngineStatus()
-	case "start":
-		return ec.handleManualStart()
 	case "split":
 		return ec.handleManualSplit()
 	case "reset":
@@ -165,7 +163,6 @@ func (ec *EngineController) displayCommands() {
 	fmt.Println("\nAvailable commands:")
 	fmt.Println("  h, help    - Show this help")
 	fmt.Println("  s, status  - Show current status")
-	fmt.Println("  start      - Manually start the run")
 	fmt.Println("  split      - Manually trigger a split")
 	fmt.Println("  reset      - Reset the run")
 	fmt.Println("  pause      - Pause the run")
@@ -245,28 +242,16 @@ func (ec *EngineController) displayDetailedStats() {
 	}
 
 	// Autostart info
-	if session.GetGameConfig().Autostart != nil {
-		fmt.Printf("\nAutostart Configuration:\n")
-		autostart := session.GetGameConfig().Autostart
-		fmt.Printf("  Enabled: %s\n", autostart.Active)
-		fmt.Printf("  Address: %s\n", autostart.Address)
-		fmt.Printf("  Value: %s\n", autostart.Value)
-		fmt.Printf("  Type: %s\n", autostart.Type)
-		if autostart.Note != "" {
-			fmt.Printf("  Note: %s\n", autostart.Note)
-		}
+	fmt.Printf("\nAutostart Configuration:\n")
+	autostart := session.GetGameConfig().Autostart
+	fmt.Printf("  Address: %s\n", autostart.Address)
+	fmt.Printf("  Value: %s\n", autostart.Value)
+	fmt.Printf("  Type: %s\n", autostart.Type)
+	if autostart.Note != "" {
+		fmt.Printf("  Note: %s\n", autostart.Note)
 	}
 
 	fmt.Println(strings.Repeat("=", 60))
-}
-
-// handleManualStart handles manual start command
-func (ec *EngineController) handleManualStart() error {
-	if err := ec.engine.ManualStart(); err != nil {
-		return fmt.Errorf("failed to start: %w", err)
-	}
-	ec.cli.printSuccess("Run started manually")
-	return nil
 }
 
 // handleManualSplit handles manual split command
@@ -430,10 +415,8 @@ func (ec *EngineController) onStateChange(oldState, newState engine.SplitterStat
 	// Show special messages for important state changes
 	switch newState {
 	case engine.StateWaitingForStart:
-		if oldState == engine.StateIdle {
-			ec.cli.printInfo("Autostart enabled - waiting for start condition...")
-			ec.cli.printInfo("The run will automatically start when the game begins")
-		}
+		ec.cli.printInfo("Autostart enabled - waiting for start condition...")
+		ec.cli.printInfo("The run will automatically start when the game begins")
 	case engine.StateRunning:
 		if oldState == engine.StateWaitingForStart {
 			ec.cli.printSuccess("🎮 Game started - run is now active!")
@@ -466,19 +449,15 @@ func (ec *EngineController) ValidateConfiguration(runConfig *config.RunConfig, g
 		}
 	}
 
-	// Validate autostart configuration if present
-	if gameConfig.Autostart != nil {
-		if gameConfig.Autostart.Active == "1" {
-			if gameConfig.Autostart.Address == "" {
-				return fmt.Errorf("autostart is enabled but missing address")
-			}
-			if gameConfig.Autostart.Value == "" {
-				return fmt.Errorf("autostart is enabled but missing value")
-			}
-			if gameConfig.Autostart.Type == "" {
-				return fmt.Errorf("autostart is enabled but missing type")
-			}
-		}
+	// Validate autostart configuration
+	if gameConfig.Autostart.Address == "" {
+		return fmt.Errorf("autostart is enabled but missing address")
+	}
+	if gameConfig.Autostart.Value == "" {
+		return fmt.Errorf("autostart is enabled but missing value")
+	}
+	if gameConfig.Autostart.Type == "" {
+		return fmt.Errorf("autostart is enabled but missing type")
 	}
 
 	return nil
