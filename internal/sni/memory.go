@@ -18,35 +18,6 @@ type MemoryValue struct {
 	Data      []byte
 }
 
-// ReadByte reads a single byte from memory
-func (c *Client) ReadByte(ctx context.Context, deviceURI string, address uint32) (uint8, error) {
-	data, err := c.ReadMemory(ctx, deviceURI, address, 1)
-	if err != nil {
-		return 0, err
-	}
-
-	if len(data) != 1 {
-		return 0, fmt.Errorf("expected 1 byte, got %d", len(data))
-	}
-
-	return data[0], nil
-}
-
-// ReadWord reads a 16-bit word from memory (little-endian)
-func (c *Client) ReadWord(ctx context.Context, deviceURI string, address uint32) (uint16, error) {
-	data, err := c.ReadMemory(ctx, deviceURI, address, 2)
-	if err != nil {
-		return 0, err
-	}
-
-	if len(data) != 2 {
-		return 0, fmt.Errorf("expected 2 bytes, got %d", len(data))
-	}
-
-	// SNES is little-endian
-	return uint16(data[0]) | (uint16(data[1]) << 8), nil
-}
-
 // ReadMemoryValue reads memory and returns both byte and word interpretations
 func (c *Client) ReadMemoryValue(ctx context.Context, deviceURI string, address uint32) (*MemoryValue, error) {
 	// Read 2 bytes to get both byte and word values
