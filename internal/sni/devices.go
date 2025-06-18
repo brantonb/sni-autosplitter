@@ -83,11 +83,21 @@ func (dm *DeviceManager) DiscoverDevices(ctx context.Context) ([]*Device, error)
 func (dm *DeviceManager) TestDeviceConnection(ctx context.Context, device *Device) error {
 	dm.logger.WithField("device", device.DisplayName).Info("Testing device connection")
 
+	// First, detect and set the memory mapping for this device
+	memoryMapping, err := dm.DetectMemoryMapping(ctx, device)
+	if err != nil {
+		dm.logger.WithError(err).Warn("Failed to detect memory mapping, using default")
+		// Continue with default mapping (LoROM) that's already set in the client
+	} else {
+		// Store the detected memory mapping in the client for all future reads
+		dm.client.SetMemoryMapping(memoryMapping)
+	}
+
 	// Try to read a known SNES memory location (usually safe to read)
 	// We'll read from the WRAM area which should always be accessible
 	testAddress := uint32(0xF50000) // Start of WRAM in FxPakPro address space
 
-	_, err := dm.client.ReadMemory(ctx, device.URI, testAddress, 1)
+	_, err = dm.client.ReadMemory(ctx, device.URI, testAddress, 1)
 	if err != nil {
 		return fmt.Errorf("device connection test failed: %w", err)
 	}

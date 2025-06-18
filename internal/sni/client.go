@@ -13,14 +13,15 @@ import (
 
 // Client wraps the SNI gRPC client with connection management and retry logic
 type Client struct {
-	logger     *logrus.Logger
-	address    string
-	conn       *grpc.ClientConn
-	devices    sni.DevicesClient
-	memory     sni.DeviceMemoryClient
-	control    sni.DeviceControlClient
-	connected  bool
-	retryDelay time.Duration
+	logger        *logrus.Logger
+	address       string
+	conn          *grpc.ClientConn
+	devices       sni.DevicesClient
+	memory        sni.DeviceMemoryClient
+	control       sni.DeviceControlClient
+	connected     bool
+	retryDelay    time.Duration
+	memoryMapping sni.MemoryMapping
 }
 
 // Device represents an SNI device with its capabilities
@@ -39,11 +40,23 @@ type Device struct {
 func NewClient(logger *logrus.Logger, host string, port int) *Client {
 	address := fmt.Sprintf("%s:%d", host, port)
 	return &Client{
-		logger:     logger,
-		address:    address,
-		connected:  false,
-		retryDelay: time.Second * 2,
+		logger:        logger,
+		address:       address,
+		connected:     false,
+		retryDelay:    time.Second * 2,
+		memoryMapping: sni.MemoryMapping_LoROM, // Default to LoROM
 	}
+}
+
+// SetMemoryMapping sets the memory mapping to be used for all memory operations
+func (c *Client) SetMemoryMapping(mapping sni.MemoryMapping) {
+	c.memoryMapping = mapping
+	c.logger.WithField("mapping", mapping.String()).Info("Memory mapping set")
+}
+
+// GetMemoryMapping returns the currently configured memory mapping
+func (c *Client) GetMemoryMapping() sni.MemoryMapping {
+	return c.memoryMapping
 }
 
 // Connect establishes a connection to the SNI server
@@ -198,9 +211,10 @@ func (c *Client) ReadMemory(ctx context.Context, deviceURI string, address uint3
 	request := &sni.SingleReadMemoryRequest{
 		Uri: deviceURI,
 		Request: &sni.ReadMemoryRequest{
-			RequestAddress:      address,
-			RequestAddressSpace: sni.AddressSpace_FxPakPro, // USB2SNES configs use FxPakPro address space
-			Size:                size,
+			RequestAddress:       address,
+			RequestAddressSpace:  sni.AddressSpace_FxPakPro, // USB2SNES configs use FxPakPro address space
+			RequestMemoryMapping: c.memoryMapping,
+			Size:                 size,
 		},
 	}
 
@@ -233,9 +247,10 @@ func (c *Client) ReadMultipleMemory(ctx context.Context, deviceURI string, reque
 	sniRequests := make([]*sni.ReadMemoryRequest, len(requests))
 	for i, req := range requests {
 		sniRequests[i] = &sni.ReadMemoryRequest{
-			RequestAddress:      req.Address,
-			RequestAddressSpace: sni.AddressSpace_FxPakPro, // USB2SNES configs use FxPakPro address space
-			Size:                req.Size,
+			RequestAddress:       req.Address,
+			RequestAddressSpace:  sni.AddressSpace_FxPakPro, // USB2SNES configs use FxPakPro address space
+			RequestMemoryMapping: c.memoryMapping,
+			Size:                 req.Size,
 		}
 	}
 
