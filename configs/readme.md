@@ -17,7 +17,7 @@ configs/
 
 ## Game Configuration Format
 
-Game configurations define memory addresses and conditions for autosplitting. They are compatible with the USB2SNES format and use the FxPakPro address space.
+Game configurations define memory addresses and conditions for autosplitting. They are compatible with the USB2SNES autosplitter format and use SNES A-bus addresses, which are automatically converted to FxPakPro address space internally.
 
 ### Basic Structure
 
@@ -108,17 +108,24 @@ Use `next` to require a sequence of conditions to be met in order:
 
 ### Address Space
 
-Game configurations use the FxPakPro address space:
+Game configurations use **SNES A-bus addresses** (the native SNES memory addressing format). These addresses are automatically converted to FxPakPro address space internally by adding `0xF50000` to map them to the WRAM region.
 
+For example:
+- `0xA0` (game mode) → `0xF500A0` in FxPakPro space
+- `0x10` (submodule) → `0xF50010` in FxPakPro space  
+- `0x130` (room ID) → `0xF50130` in FxPakPro space
+- `0xF374` (item flags) → `0xF5F374` in FxPakPro space
+
+The FxPakPro address space mapping is:
 - `$00_0000..$DF_FFFF` = ROM contents
 - `$E0_0000..$EF_FFFF` = SRAM contents  
-- `$F5_0000..$F6_FFFF` = WRAM contents
+- `$F5_0000..$F6_FFFF` = WRAM contents (where most game variables are stored)
 - `$F7_0000..$F7_FFFF` = VRAM contents
 - `$F8_0000..$F8_FFFF` = APU contents
 - `$F9_0000..$F9_01FF` = CGRAM contents
 - `$F9_0200..$F9_041F` = OAM contents
 
-Most SNES game variables are stored in WRAM (0xF50000+).
+Since most SNES game variables are stored in WRAM, and the USB2SNES protocol maps SNES addresses to this WRAM region, you should use standard SNES A-bus addresses in your game configurations.
 
 ## Run Configuration Format
 

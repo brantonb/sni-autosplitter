@@ -191,14 +191,14 @@ func (s *Split) AddressInt() uint32 {
 
 // GetFxPakProAddress returns the address converted to FxPakPro space for SNI
 func (s *Split) GetFxPakProAddress() uint32 {
-	// Convert USB2SNES-style address to FxPakPro space
+	// Convert SNES A-bus address to FxPakPro space
 	// This adds 0xF50000 to SNES addresses to map them to WRAM
 	if s.addressInt >= 0xF50000 {
 		// Already in FxPakPro space
 		return s.addressInt
 	}
 
-	// Convert to WRAM space (matches USB2SNES behavior)
+	// Convert to WRAM space (matches autosplitter config behavior)
 	return 0xF50000 + s.addressInt
 }
 

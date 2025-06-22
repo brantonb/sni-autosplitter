@@ -56,13 +56,6 @@ func (ac *AddressConverter) ValidateFxPakProAddress(address uint32) error {
 	return fmt.Errorf("address 0x%06X is not in valid FxPakPro address space", address)
 }
 
-// ConvertUSB2SNESToFxPakPro converts USB2SNES-style addresses to proper FxPakPro addresses
-func (ac *AddressConverter) ConvertUSB2SNESToFxPakPro(address uint32) uint32 {
-	// All USB2SNES configs use SNES addresses that get mapped to WRAM
-	// Add the WRAM offset (0xF50000) to convert to FxPakPro space
-	return 0xF50000 + address
-}
-
 // GetAddressSpaceInfo returns information about what memory region an address belongs to
 func (ac *AddressConverter) GetAddressSpaceInfo(address uint32) string {
 	switch {
