@@ -23,6 +23,10 @@ func (se *SplittingEngine) ManualUndoSplit() error {
 
 // ManualSkipSplit manually skips the last split
 func (se *SplittingEngine) ManualSkipSplit() error {
+	if !se.session.CanSkip() {
+		return fmt.Errorf("cannot skip split in current state: %s (likely on final split)", se.session.GetState())
+	}
+
 	se.logger.Info("Manual skip split triggered")
 	return se.triggerSkipSplit()
 }

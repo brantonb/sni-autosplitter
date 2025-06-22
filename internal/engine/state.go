@@ -288,11 +288,10 @@ func (ss *SplitterSession) TriggerSkipSplit() bool {
 		return false
 	}
 
-	if ss.currentSplit >= len(ss.runConfig.Splits) {
+	// Check if the next current split would be valid - can't skip if there's nowhere to skip to
+	if ss.currentSplit+1 >= len(ss.runConfig.Splits) {
 		return false
 	}
-
-	ss.currentSplit++
 
 	splitName := ss.runConfig.Splits[ss.currentSplit]
 
@@ -301,6 +300,7 @@ func (ss *SplitterSession) TriggerSkipSplit() bool {
 		state.SetIncomplete()
 	}
 
+	ss.currentSplit++
 	ss.lastSplit = time.Now()
 
 	return true
@@ -392,6 +392,13 @@ func (ss *SplitterSession) CanSplit() bool {
 	ss.mu.RLock()
 	defer ss.mu.RUnlock()
 	return ss.state == StateRunning && ss.currentSplit < len(ss.runConfig.Splits)
+}
+
+// CanSkip returns true if a skip can be triggered
+func (ss *SplitterSession) CanSkip() bool {
+	ss.mu.RLock()
+	defer ss.mu.RUnlock()
+	return ss.state == StateRunning && ss.currentSplit+1 < len(ss.runConfig.Splits)
 }
 
 // GetProgress returns the completion progress as a percentage (0-100)
