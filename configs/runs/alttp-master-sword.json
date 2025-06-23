@@ -1,12 +1,12 @@
 {
-    "name": "A Link to the Past - Master Sword No Major Glitches",
-    "category": "Master Sword No Major Glitches",
-    "game": "alttp",
-    "splits": [
-      "Escape",
-      "Eastern Palace",
-      "Desert Palace",
-      "Tower of Hera",
-      "Master Sword"
-    ]
-  }
+  "name": "A Link to the Past - Master Sword No Major Glitches",
+  "category": "Master Sword No Major Glitches",
+  "game": "alttp",
+  "splits": [
+    "Escape",
+    "Eastern Palace",
+    "Desert Palace",
+    "Tower of Hera",
+    "Master Sword"
+  ]
+}

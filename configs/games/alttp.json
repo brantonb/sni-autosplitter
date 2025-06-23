@@ -1,993 +1,899 @@
 {
-    "game": "The Legend of Zelda: A Link to the Past",
-    "autostart": {
-      "active": "1",
-      "address": "0x10",
-      "value": "0x05",
+  "game": "The Legend of Zelda: A Link to the Past",
+  "autostart": {
+    "active": "1",
+    "address": "0x10",
+    "value": "0x05",
+    "type": "eq"
+  },
+  "definitions": [
+    {
+      "name": "Zelda",
+      "address": "0xA0",
+      "value": "0x80",
+      "type": "eq",
+      "next": [
+        {
+          "address": "0x130",
+          "value": "0x19",
+          "type": "eq"
+        },
+        {
+          "address": "0xA0",
+          "value": "0x70",
+          "type": "eq"
+        }
+      ]
+    },
+    {
+      "name": "Escape",
+      "address": "0xA0",
+      "value": "0x12",
+      "type": "eq",
+      "next": [
+        {
+          "address": "0x11",
+          "value": "0x00",
+          "type": "eq"
+        }
+      ]
+    },
+    {
+      "name": "Escape (Sanc Exit)",
+      "address": "0xA0",
+      "value": "0x12",
+      "type": "eq",
+      "next": [
+        {
+          "address": "0x10",
+          "value": "0x0F",
+          "type": "eq"
+        }
+      ]
+    },
+    {
+      "name": "EP Overworld",
+      "address": "0x8A",
+      "value": "0x1E",
+      "type": "eq",
+      "next": [
+        {
+          "address": "0x10",
+          "value": "0x0F",
+          "type": "eq"
+        }
+      ]
+    },
+    {
+      "name": "EP Dungeon",
+      "address": "0xA0",
+      "value": "0xC8",
       "type": "eq"
     },
-  
-    "definitions": [
-   {
-        "name": "Zelda",
-        "address": "0xA0",
-        "value": "0x80",
-        "type": "eq",
-        "next": [
-          {
-            "address": "0x130",
-            "value": "0x19",
-            "type": "eq"
-      },
-          {
-            "address": "0xA0",
-            "value": "0x70",
-            "type": "eq"
-          }
-        ]
-      },
-  
-      {
-        "name": "Escape",
-        "address": "0xA0",
-        "value": "0x12",
-        "type": "eq",
-        "next": [
-       {
-            "address": "0x11",
-            "value": "0x00",
-            "type": "eq"
-           }
-      ] 
-      },
-  
-      {
-        "name": "Escape (Sanc Exit)",
-        "address": "0xA0",
-        "value": "0x12",
-        "type": "eq",
-        "next": [
-       {
-            "address": "0x10",
-            "value": "0x0F",
-            "type": "eq"
-           }
-      ] 
-      },
-  
-      {
-        "name": "EP Overworld",
-        "address": "0x8A",
-        "value": "0x1E",
-        "type": "eq",
-        "next": [
-       {
-            "address": "0x10",
-            "value": "0x0F",
-            "type": "eq"
-           }
-      ] 
-      },
-  
-      {
-        "name": "EP Dungeon",
-        "address": "0xA0",
-        "value": "0xC8",
-        "type": "eq"
-      },  
-    
-      {
-        "name": "Armos",
-        "address": "0x2D8",
-        "value": "0x37",
-        "type": "eq"
-      },
-  
-      {
-        "name": "Eastern Palace",
-        "address": "0xA0",
-        "value": "0xC8",
-        "type": "eq",
-        "next": [
-          {
-            "address": "0x10",
-            "value": "0x13",
-            "type": "eq"
-      },
-          {
-            "address": "0x100",
-            "value": "0x96",
-            "type": "eq"
-          }
-        ]
-      },
-  
-      {
-        "name": "DP Overworld",
-        "address": "0x8A",
-        "value": "0x30",
-        "type": "eq",
-        "next": [
-       {
-            "address": "0x10",
-            "value": "0x0F",
-            "type": "eq"
-           }
-      ] 
-      },
-  
-      {
-        "name": "DP Dungeon",
-        "address": "0xA0",
-        "value": "0x33",
-        "type": "eq"
-      },
-  
-      {
-        "name": "Lanmolas",
-        "address": "0x2D8",
-        "value": "0x39",
-        "type": "eq"
-      },
-  
-      {
-        "name": "Desert Palace",
-        "address": "0xA0",
-        "value": "0x33",
-        "type": "eq",
-        "next": [
-          {
-            "address": "0x10",
-            "value": "0x13",
-            "type": "eq"
-      },
-          {
-            "address": "0x100",
-            "value": "0x96",
-            "type": "eq"
-           }
-      ] 
-      },
-  
-      {
-        "name": "ToH Overworld",
-        "address": "0x8A",
-        "value": "0x03",
-        "type": "eq",
-        "more": [
-          {
-            "address": "0x22",
-            "value": "0xF0",
-            "type": "eq"
-      },
-      {
-            "address": "0x10",
-            "value": "0x0F",
-            "type": "eq"
-           }
-      ] 
-      },
-  
-      {
-        "name": "ToH Dungeon",
-        "address": "0xA0",
-        "value": "0x07",
-        "type": "eq"
-      },
-  
-      {
-        "name": "Moldorm",
-        "address": "0x2D8",
-        "value": "0x38",
-        "type": "eq"
-      },
-  
-      {
-        "name": "Tower of Hera",
-        "address": "0xA0",
-        "value": "0x07",
-        "type": "eq",
-        "next": [
-          {
-            "address": "0x10",
-            "value": "0x13",
-            "type": "eq"
-      },
-          {
-            "address": "0x100",
-            "value": "0x96",
-            "type": "eq"
-           }
-      ] 
-      },
-  
-      {
-        "name": "Master Sword",
-        "address": "0xA0",
-        "value": "0x80",
-        "type": "eq",
-        "next": [
-          {
-            "address": "0x76",
-            "value": "0x9",
-            "type": "eq"
-          }
-        ]
-      },
-  
-      {
-        "name": "CT Overworld",
-        "address": "0xA0",
-        "value": "0x60",
-        "type": "eq",
-        "next": [
-          {
-            "address": "0x8A",
-            "value": "0x1B",
-            "type": "eq"
-      },
-          {
-            "address": "0x10",
-            "value": "0x0F",
-            "type": "eq"
-           }
-      ] 
-      },
-      {
-        "name": "Castle Tower",
-        "address": "0xA0",
-        "value": "0x20",
-        "type": "eq",
-        "next": [
-          {
-            "address": "0x130",
-            "value": "0x15",
-            "type": "eq"
-           }
-      ] 
-      },
-  
-      {
-        "name": "Blue Balls",
-        "address": "0xA0",
-        "value": "0x20",
-        "type": "eq",
-        "next": [
-          {
-            "address": "0x10",
-            "value": "0x15",
-            "type": "eq"
-           },
-          {
-            "address": "0x100",
-            "value": "0x96",
-            "type": "eq"
-           }
-      ] 
-      },
-  
-      {
-        "name": "PoD Overworld",
-        "address": "0x8A",
-        "value": "0x5E",
-        "type": "eq",
-        "next": [
-       {
-            "address": "0x10",
-            "value": "0x0F",
-            "type": "eq"
-           }
-      ] 
-      },
-  
-      {
-        "name": "PoD Dungeon",
-        "address": "0xA0",
-        "value": "0x5A",
-        "type": "eq"
-      },
-  
-      {
-        "name": "Helma",
-        "address": "0x2D8",
-        "value": "0x20",
-        "type": "eq"
-      },
-  
-      {
-        "name": "Palace of Darkness",
-        "address": "0xA0",
-        "value": "0x5A",
-        "type": "eq",
-        "next": [
-          {
-            "address": "0x10",
-            "value": "0x16",
-            "type": "eq"
-      },
-          {
-            "address": "0x100",
-            "value": "0x96",
-            "type": "eq"
-           }
-      ] 
-      },
-  
-      {
-        "name": "TT Overworld",
-        "address": "0x8A",
-        "value": "0x58",
-        "type": "eq",
-        "next": [
-       {
-            "address": "0x10",
-            "value": "0x0F",
-            "type": "eq"
-           }
-      ] 
-      },
-  
-      {
-        "name": "TT Dungeon",
-        "address": "0xA0",
-        "value": "0xAC",
-        "type": "eq"
-      },
-  
-      {
-        "name": "Blind",
-        "address": "0x2D8",
-        "value": "0x20",
-        "type": "eq"
-      },
-  
-      {
-        "name": "Thieves' Town",
-        "address": "0xA0",
-        "value": "0xAC",
-        "type": "eq",
-        "next": [
-          {
-            "address": "0x10",
-            "value": "0x16",
-            "type": "eq"
-      },
-          {
-            "address": "0x100",
-            "value": "0x96",
-            "type": "eq"
-           }
-      ] 
-      },
-  
-      {
-        "name": "SW Overworld",
-        "address": "0x8A",
-        "value": "0x40",
-        "type": "eq"
-      },
-  
-      {
-        "name": "SW Dungeon",
-        "address": "0xA0",
-        "value": "0x29",
-        "type": "eq"
-      },
-  
-      {
-        "name": "Mothula",
-        "address": "0x2D8",
-        "value": "0x20",
-        "type": "eq"
-      },
-  
-      {
-        "name": "Skull Woods",
-        "address": "0xA0",
-        "value": "0x29",
-        "type": "eq",
-        "next": [
-          {
-            "address": "0x10",
-            "value": "0x16",
-            "type": "eq"
-      },
-          {
-            "address": "0x100",
-            "value": "0x96",
-            "type": "eq"
-           }
-      ] 
-      },
-  
-      {
-        "name": "IP Overworld",
-        "address": "0x8A",
-        "value": "0x75",
-        "type": "eq",
-        "next": [
-       {
-            "address": "0x10",
-            "value": "0x0F",
-            "type": "eq"
-           }
-      ] 
-      },
-  
-      {
-        "name": "IP Dungeon",
-        "address": "0xA0",
-        "value": "0xDE",
-        "type": "eq"
-      },
-  
-      {
-        "name": "Kholdstare",
-        "address": "0x2D8",
-        "value": "0x20",
-        "type": "eq"  
-      },
-  
-      {
-        "name": "Ice Palace",
-        "address": "0xA0",
-        "value": "0xDE",
-        "type": "eq",
-        "next": [
-          {
-            "address": "0x10",
-            "value": "0x16",
-            "type": "eq"
-      },
-          {
-            "address": "0x100",
-            "value": "0x96",
-            "type": "eq"
-           }
-      ] 
-      },
-  
-      {
-        "name": "SP Overworld",
-        "address": "0x8A",
-        "value": "0x3B",
-        "type": "eq",
-        "next": [
-          {
-            "address": "0x8A",
-            "value": "0x7B",
-            "type": "eq"
-      },
-          {
-            "address": "0x10",
-            "value": "0x0F",
-            "type": "eq"
-           }
-      ] 
-      },
-  
-      {
-        "name": "SP Dungeon",
-        "address": "0xA0",
-        "value": "0x06",
-        "type": "eq"
-      },
-  
-      {
-        "name": "Arrghus",
-        "address": "0x2D8",
-        "value": "0x20",
-        "type": "eq"
-      },
-  
-      {
-        "name": "Swamp Palace",
-        "address": "0xA0",
-        "value": "0x06",
-        "type": "eq",
-        "next": [
-          {
-            "address": "0x10",
-            "value": "0x16",
-            "type": "eq"
-      },
-          {
-            "address": "0x100",
-            "value": "0x96",
-            "type": "eq"
-           }
-      ] 
-      },
-      
-      {
-        "name": "MM Overworld",
-        "address": "0x8A",
-        "value": "0x70",
-        "type": "eq",
-        "more": [
-          {
-            "address": "0x22",
-            "value": "0x28",
-            "type": "eq"
-      },
-      {
-            "address": "0x10",
-            "value": "0x0F",
-            "type": "eq"
-           }
-      ] 
-      },
-  
-      {
-        "name": "MM Dungeon",
-        "address": "0xA0",
-        "value": "0x90",
-        "type": "eq"
-      },
-  
-      {
-        "name": "Vitreous",
-        "address": "0x2D8",
-        "value": "0x20",
-        "type": "eq"
-      },
-  
-      {
-        "name": "Misery Mire",
-        "address": "0xA0",
-        "value": "0x90",
-        "type": "eq",
-        "next": [
-          {
-            "address": "0x10",
-            "value": "0x16",
-            "type": "eq"
-      },
-          {
-            "address": "0x100",
-            "value": "0x96",
-            "type": "eq"
-           }
-      ] 
-      },
-  
-      {
-        "name": "TR Overworld",
-        "address": "0x8A",
-        "value": "0x47",
-        "type": "eq",
-        "next": [
-       {
-            "address": "0x10",
-            "value": "0x0F",
-            "type": "eq"
-           }
-      ] 
-      },
-      {
-        "name": "TR Dungeon",
-        "address": "0xA0",
-        "value": "0xA4",
-        "type": "eq"
-      },
-  
-      {
-        "name": "Trinexx",
-        "address": "0x2D8",
-        "value": "0x20",
-        "type": "eq"
-      },
-  
-      {
-        "name": "Turtle Rock",
-        "address": "0xA0",
-        "value": "0xA4",
-        "type": "eq",
-        "next": [
-          {
-            "address": "0x10",
-            "value": "0x16",
-            "type": "eq"
-      },
-          {
-            "address": "0x100",
-            "value": "0x96",
-            "type": "eq"
-           }
-      ] 
-      },
-  
-      {
-        "name": "GTBK",
-        "address": "0xA0",
-        "value": "0x1C",
-        "type": "eq",
-        "next": [
-          {
-            "address": "0xA0",
-            "value": "0x0C",
-            "type": "eq"
-          }
-        ]
-      },
-  
-      {
-        "name": "GT Upstairs",
-        "address": "0xA0",
-        "value": "0x0D",
-        "type": "eq"
-      },
-  
-      {
-        "name": "Aga2",
-        "address": "0x130",
-        "value": "0x1D",
-        "type": "eq"
-      },
-  
-      {
-        "name": "Ganon's Tower",
-        "address": "0xA0",
-        "value": "0x0D",
-        "type": "eq",
-        "next": [
-          {
-            "address": "0x10",
-            "value": "0x18",
-            "type": "eq"
-       },
-          {
-            "address": "0x10",
-            "value": "0x09",
-            "type": "eq"
-       },
-          {
-            "address": "0x4B",
-            "value": "0x00",
-            "type": "eq"
-          }
-        ]
-      },
-  
-      {
-        "name": "Ganon",
-        "address": "0x10",
-        "value": "0x19",
-        "type": "eq"
-      },
-      
-      {
-        "name": "Escape (S&Q)",
-        "address": "0xA0",
-        "value": "0x12",
-        "type": "eq",
-        "next": [
-       {
-            "address": "0x10",
-            "value": "0x17",
-            "type": "eq"
-           }
-      ] 
-      },
-      
-      {
-        "name": "Kiki Skip",
-        "address": "0xA0",
-        "value": "0x09",
-        "type": "eq"
-      },
-  
-  
-      {
-        "name": "TR Wrap",
-        "address": "0x8A",
-        "value": "0x45",
-        "type": "eq",
-        "next": [
-       {
-            "address": "0x10",
-            "value": "0x0F",
-            "type": "eq"
-           }
-      ] 
-      },
-  
-      {
-        "name": "Digging Game",
-        "address": "0x8A",
-        "value": "0x68",
-        "type": "eq",
-        "next": [
-          {
-            "address": "0xF36B",
-            "value": "0x01",
-            "type": "eq"
-      },
-          {
-            "address": "0x8A",
-            "value": "0x69",
-            "type": "eq"
-           }
-      ] 
-      },
-  
-      {
-        "name": "Chest Game",
-        "address": "0xA0",
-        "value": "0x06",
-        "type": "eq",
-        "next": [
-          {
-            "address": "0xF36B",
-            "value": "0x01",
-            "type": "eq"
-      },
-          {
-            "address": "0x10",
-            "value": "0x0F",
-            "type": "eq"
-           }
-      ] 
-      },
-  
-      {
-        "name": "Bow & Arrows",
-        "address": "0xF340",
-        "value": "0x02",
-        "type": "eq"
-      },
-  
-      {
-        "name": "Bow & Silvers",
-        "address": "0xF340",
-        "value": "0x04",
-        "type": "eq"
-      },
-  
-      {
-        "name": "Blue Boomerang",
-        "address": "0xF341",
-        "value": "0x01",
-        "type": "eq"
-      },
-  
-      {
-        "name": "Red Boomerang",
-        "address": "0xF341",
-        "value": "0x02",
-        "type": "eq"
-      },
-  
-      {
-        "name": "Hookshot",
-        "address": "0xF342",
-        "value": "0x01",
-        "type": "eq"
-      },
-  
-      {
-        "name": "Mushroom",
-        "address": "0xF344",
-        "value": "0x01",
-        "type": "eq"
-      },
-  
-      {
-        "name": "Magic Powder",
-        "address": "0xF344",
-        "value": "0x02",
-        "type": "eq"
-      },
-  
-      {
-        "name": "Fire Rod",
-        "address": "0xF345",
-        "value": "0x01",
-        "type": "eq"
-      },
-  
-      {
-        "name": "Ice Rod",
-        "address": "0xF346",
-        "value": "0x01",
-        "type": "eq"
-      },
-  
-      {
-        "name": "Bombos Medallion",
-        "address": "0xF347",
-        "value": "0x01",
-        "type": "eq"
-      },
-  
-      {
-        "name": "Ether Medallion",
-        "address": "0xF348",
-        "value": "0x01",
-        "type": "eq"
-      },
-  
-      {
-        "name": "Quake Medallion",
-        "address": "0xF349",
-        "value": "0x01",
-        "type": "eq"
-      },
-  
-      {
-        "name": "Lamp",
-        "address": "0xF34A",
-        "value": "0x01",
-        "type": "eq"
-      },
-  
-      {
-        "name": "Hammer",
-        "address": "0xF34B",
-        "value": "0x01",
-        "type": "eq"
-      },
-  
-      {
-        "name": "Shovel",
-        "address": "0xF34C",
-        "value": "0x01",
-        "type": "eq"
-      },
-  
-      {
-        "name": "Flute",
-        "address": "0xF34C",
-        "value": "0x02",
-        "type": "eq"
-      },
-  
-      {
-        "name": "Activated Flute",
-        "address": "0xF34C",
-        "value": "0x03",
-        "type": "eq"
-      },
-  
-      {
-        "name": "Bugnet",
-        "address": "0xF34D",
-        "value": "0x01",
-        "type": "eq"
-      },
-  
-      {
-        "name": "Book of Mudora",
-        "address": "0xF34E",
-        "value": "0x01",
-        "type": "eq"
-      },
-  
-      {
-        "name": "Cane of Somaria",
-        "address": "0xF350",
-        "value": "0x01",
-        "type": "eq"
-      },
-  
-      {
-        "name": "Cane of Byrna",
-        "address": "0xF351",
-        "value": "0x01",
-        "type": "eq"
-      },
-  
-      {
-        "name": "Cape",
-        "address": "0xF352",
-        "value": "0x01",
-        "type": "eq"
-      },
-  
-      {
-        "name": "Mirror",
-        "address": "0xF353",
-        "value": "0x01",
-        "type": "eq"
-      },
-  
-      {
-        "name": "Power Glove",
-        "address": "0xF354",
-        "value": "0x01",
-        "type": "eq"
-      },
-  
-      {
-        "name": "Titan's Mitts",
-        "address": "0xF354",
-        "value": "0x02",
-        "type": "eq"
-      },
-  
-      {
-        "name": "Boots",
-        "address": "0xF355",
-        "value": "0x01",
-        "type": "eq"
-      },
-  
-      {
-        "name": "Flippers",
-        "address": "0xF356",
-        "value": "0x01",
-        "type": "eq"
-      },
-  
-      {
-        "name": "Moon Pearl",
-        "address": "0xF357",
-        "value": "0x01",
-        "type": "eq"
-      },
-  
-      {
-        "name": "Fighter's Sword",
-        "address": "0xF359",
-        "value": "0x01",
-        "type": "eq"
-      },
-  
-      {
-        "name": "Master's Sword",
-        "address": "0xF359",
-        "value": "0x02",
-        "type": "eq"
-      },
-  
-      {
-        "name": "Tempered Sword",
-        "address": "0xF359",
-        "value": "0x03",
-        "type": "eq"
-      },
-  
-      {
-        "name": "Gold Sword",
-        "address": "0xF359",
-        "value": "0x04",
-        "type": "eq"
-      },
-  
-      {
-        "name": "Blue Shield",
-        "address": "0xF35A",
-        "value": "0x01",
-        "type": "eq"
-      },
-  
-      {
-        "name": "Red Shield",
-        "address": "0xF35A",
-        "value": "0x02",
-        "type": "eq"
-      },
-  
-      {
-        "name": "Mirror Shield",
-        "address": "0xF35A",
-        "value": "0x03",
-        "type": "eq"
-      },
-  
-      {
-        "name": "Blue Mail",
-        "address": "0xF35A",
-        "value": "0x01",
-        "type": "eq"
-      },
-  
-      {
-        "name": "Red Mail",
-        "address": "0xF35A",
-        "value": "0x02",
-        "type": "eq"
-      }
-    ]
-  }
-  
+    {
+      "name": "Armos",
+      "address": "0x2D8",
+      "value": "0x37",
+      "type": "eq"
+    },
+    {
+      "name": "Eastern Palace",
+      "address": "0xA0",
+      "value": "0xC8",
+      "type": "eq",
+      "next": [
+        {
+          "address": "0x10",
+          "value": "0x13",
+          "type": "eq"
+        },
+        {
+          "address": "0x100",
+          "value": "0x96",
+          "type": "eq"
+        }
+      ]
+    },
+    {
+      "name": "DP Overworld",
+      "address": "0x8A",
+      "value": "0x30",
+      "type": "eq",
+      "next": [
+        {
+          "address": "0x10",
+          "value": "0x0F",
+          "type": "eq"
+        }
+      ]
+    },
+    {
+      "name": "DP Dungeon",
+      "address": "0xA0",
+      "value": "0x33",
+      "type": "eq"
+    },
+    {
+      "name": "Lanmolas",
+      "address": "0x2D8",
+      "value": "0x39",
+      "type": "eq"
+    },
+    {
+      "name": "Desert Palace",
+      "address": "0xA0",
+      "value": "0x33",
+      "type": "eq",
+      "next": [
+        {
+          "address": "0x10",
+          "value": "0x13",
+          "type": "eq"
+        },
+        {
+          "address": "0x100",
+          "value": "0x96",
+          "type": "eq"
+        }
+      ]
+    },
+    {
+      "name": "ToH Overworld",
+      "address": "0x8A",
+      "value": "0x03",
+      "type": "eq",
+      "more": [
+        {
+          "address": "0x22",
+          "value": "0xF0",
+          "type": "eq"
+        },
+        {
+          "address": "0x10",
+          "value": "0x0F",
+          "type": "eq"
+        }
+      ]
+    },
+    {
+      "name": "ToH Dungeon",
+      "address": "0xA0",
+      "value": "0x07",
+      "type": "eq"
+    },
+    {
+      "name": "Moldorm",
+      "address": "0x2D8",
+      "value": "0x38",
+      "type": "eq"
+    },
+    {
+      "name": "Tower of Hera",
+      "address": "0xA0",
+      "value": "0x07",
+      "type": "eq",
+      "next": [
+        {
+          "address": "0x10",
+          "value": "0x13",
+          "type": "eq"
+        },
+        {
+          "address": "0x100",
+          "value": "0x96",
+          "type": "eq"
+        }
+      ]
+    },
+    {
+      "name": "Master Sword",
+      "address": "0xA0",
+      "value": "0x80",
+      "type": "eq",
+      "next": [
+        {
+          "address": "0x76",
+          "value": "0x9",
+          "type": "eq"
+        }
+      ]
+    },
+    {
+      "name": "CT Overworld",
+      "address": "0xA0",
+      "value": "0x60",
+      "type": "eq",
+      "next": [
+        {
+          "address": "0x8A",
+          "value": "0x1B",
+          "type": "eq"
+        },
+        {
+          "address": "0x10",
+          "value": "0x0F",
+          "type": "eq"
+        }
+      ]
+    },
+    {
+      "name": "Castle Tower",
+      "address": "0xA0",
+      "value": "0x20",
+      "type": "eq",
+      "next": [
+        {
+          "address": "0x130",
+          "value": "0x15",
+          "type": "eq"
+        }
+      ]
+    },
+    {
+      "name": "Blue Balls",
+      "address": "0xA0",
+      "value": "0x20",
+      "type": "eq",
+      "next": [
+        {
+          "address": "0x10",
+          "value": "0x15",
+          "type": "eq"
+        },
+        {
+          "address": "0x100",
+          "value": "0x96",
+          "type": "eq"
+        }
+      ]
+    },
+    {
+      "name": "PoD Overworld",
+      "address": "0x8A",
+      "value": "0x5E",
+      "type": "eq",
+      "next": [
+        {
+          "address": "0x10",
+          "value": "0x0F",
+          "type": "eq"
+        }
+      ]
+    },
+    {
+      "name": "PoD Dungeon",
+      "address": "0xA0",
+      "value": "0x5A",
+      "type": "eq"
+    },
+    {
+      "name": "Helma",
+      "address": "0x2D8",
+      "value": "0x20",
+      "type": "eq"
+    },
+    {
+      "name": "Palace of Darkness",
+      "address": "0xA0",
+      "value": "0x5A",
+      "type": "eq",
+      "next": [
+        {
+          "address": "0x10",
+          "value": "0x16",
+          "type": "eq"
+        },
+        {
+          "address": "0x100",
+          "value": "0x96",
+          "type": "eq"
+        }
+      ]
+    },
+    {
+      "name": "TT Overworld",
+      "address": "0x8A",
+      "value": "0x58",
+      "type": "eq",
+      "next": [
+        {
+          "address": "0x10",
+          "value": "0x0F",
+          "type": "eq"
+        }
+      ]
+    },
+    {
+      "name": "TT Dungeon",
+      "address": "0xA0",
+      "value": "0xAC",
+      "type": "eq"
+    },
+    {
+      "name": "Blind",
+      "address": "0x2D8",
+      "value": "0x20",
+      "type": "eq"
+    },
+    {
+      "name": "Thieves' Town",
+      "address": "0xA0",
+      "value": "0xAC",
+      "type": "eq",
+      "next": [
+        {
+          "address": "0x10",
+          "value": "0x16",
+          "type": "eq"
+        },
+        {
+          "address": "0x100",
+          "value": "0x96",
+          "type": "eq"
+        }
+      ]
+    },
+    {
+      "name": "SW Overworld",
+      "address": "0x8A",
+      "value": "0x40",
+      "type": "eq"
+    },
+    {
+      "name": "SW Dungeon",
+      "address": "0xA0",
+      "value": "0x29",
+      "type": "eq"
+    },
+    {
+      "name": "Mothula",
+      "address": "0x2D8",
+      "value": "0x20",
+      "type": "eq"
+    },
+    {
+      "name": "Skull Woods",
+      "address": "0xA0",
+      "value": "0x29",
+      "type": "eq",
+      "next": [
+        {
+          "address": "0x10",
+          "value": "0x16",
+          "type": "eq"
+        },
+        {
+          "address": "0x100",
+          "value": "0x96",
+          "type": "eq"
+        }
+      ]
+    },
+    {
+      "name": "IP Overworld",
+      "address": "0x8A",
+      "value": "0x75",
+      "type": "eq",
+      "next": [
+        {
+          "address": "0x10",
+          "value": "0x0F",
+          "type": "eq"
+        }
+      ]
+    },
+    {
+      "name": "IP Dungeon",
+      "address": "0xA0",
+      "value": "0xDE",
+      "type": "eq"
+    },
+    {
+      "name": "Kholdstare",
+      "address": "0x2D8",
+      "value": "0x20",
+      "type": "eq"
+    },
+    {
+      "name": "Ice Palace",
+      "address": "0xA0",
+      "value": "0xDE",
+      "type": "eq",
+      "next": [
+        {
+          "address": "0x10",
+          "value": "0x16",
+          "type": "eq"
+        },
+        {
+          "address": "0x100",
+          "value": "0x96",
+          "type": "eq"
+        }
+      ]
+    },
+    {
+      "name": "SP Overworld",
+      "address": "0x8A",
+      "value": "0x3B",
+      "type": "eq",
+      "next": [
+        {
+          "address": "0x8A",
+          "value": "0x7B",
+          "type": "eq"
+        },
+        {
+          "address": "0x10",
+          "value": "0x0F",
+          "type": "eq"
+        }
+      ]
+    },
+    {
+      "name": "SP Dungeon",
+      "address": "0xA0",
+      "value": "0x06",
+      "type": "eq"
+    },
+    {
+      "name": "Arrghus",
+      "address": "0x2D8",
+      "value": "0x20",
+      "type": "eq"
+    },
+    {
+      "name": "Swamp Palace",
+      "address": "0xA0",
+      "value": "0x06",
+      "type": "eq",
+      "next": [
+        {
+          "address": "0x10",
+          "value": "0x16",
+          "type": "eq"
+        },
+        {
+          "address": "0x100",
+          "value": "0x96",
+          "type": "eq"
+        }
+      ]
+    },
+    {
+      "name": "MM Overworld",
+      "address": "0x8A",
+      "value": "0x70",
+      "type": "eq",
+      "more": [
+        {
+          "address": "0x22",
+          "value": "0x28",
+          "type": "eq"
+        },
+        {
+          "address": "0x10",
+          "value": "0x0F",
+          "type": "eq"
+        }
+      ]
+    },
+    {
+      "name": "MM Dungeon",
+      "address": "0xA0",
+      "value": "0x90",
+      "type": "eq"
+    },
+    {
+      "name": "Vitreous",
+      "address": "0x2D8",
+      "value": "0x20",
+      "type": "eq"
+    },
+    {
+      "name": "Misery Mire",
+      "address": "0xA0",
+      "value": "0x90",
+      "type": "eq",
+      "next": [
+        {
+          "address": "0x10",
+          "value": "0x16",
+          "type": "eq"
+        },
+        {
+          "address": "0x100",
+          "value": "0x96",
+          "type": "eq"
+        }
+      ]
+    },
+    {
+      "name": "TR Overworld",
+      "address": "0x8A",
+      "value": "0x47",
+      "type": "eq",
+      "next": [
+        {
+          "address": "0x10",
+          "value": "0x0F",
+          "type": "eq"
+        }
+      ]
+    },
+    {
+      "name": "TR Dungeon",
+      "address": "0xA0",
+      "value": "0xA4",
+      "type": "eq"
+    },
+    {
+      "name": "Trinexx",
+      "address": "0x2D8",
+      "value": "0x20",
+      "type": "eq"
+    },
+    {
+      "name": "Turtle Rock",
+      "address": "0xA0",
+      "value": "0xA4",
+      "type": "eq",
+      "next": [
+        {
+          "address": "0x10",
+          "value": "0x16",
+          "type": "eq"
+        },
+        {
+          "address": "0x100",
+          "value": "0x96",
+          "type": "eq"
+        }
+      ]
+    },
+    {
+      "name": "GTBK",
+      "address": "0xA0",
+      "value": "0x1C",
+      "type": "eq",
+      "next": [
+        {
+          "address": "0xA0",
+          "value": "0x0C",
+          "type": "eq"
+        }
+      ]
+    },
+    {
+      "name": "GT Upstairs",
+      "address": "0xA0",
+      "value": "0x0D",
+      "type": "eq"
+    },
+    {
+      "name": "Aga2",
+      "address": "0x130",
+      "value": "0x1D",
+      "type": "eq"
+    },
+    {
+      "name": "Ganon's Tower",
+      "address": "0xA0",
+      "value": "0x0D",
+      "type": "eq",
+      "next": [
+        {
+          "address": "0x10",
+          "value": "0x18",
+          "type": "eq"
+        },
+        {
+          "address": "0x10",
+          "value": "0x09",
+          "type": "eq"
+        },
+        {
+          "address": "0x4B",
+          "value": "0x00",
+          "type": "eq"
+        }
+      ]
+    },
+    {
+      "name": "Ganon",
+      "address": "0x10",
+      "value": "0x19",
+      "type": "eq"
+    },
+    {
+      "name": "Escape (S&Q)",
+      "address": "0xA0",
+      "value": "0x12",
+      "type": "eq",
+      "next": [
+        {
+          "address": "0x10",
+          "value": "0x17",
+          "type": "eq"
+        }
+      ]
+    },
+    {
+      "name": "Kiki Skip",
+      "address": "0xA0",
+      "value": "0x09",
+      "type": "eq"
+    },
+    {
+      "name": "TR Wrap",
+      "address": "0x8A",
+      "value": "0x45",
+      "type": "eq",
+      "next": [
+        {
+          "address": "0x10",
+          "value": "0x0F",
+          "type": "eq"
+        }
+      ]
+    },
+    {
+      "name": "Digging Game",
+      "address": "0x8A",
+      "value": "0x68",
+      "type": "eq",
+      "next": [
+        {
+          "address": "0xF36B",
+          "value": "0x01",
+          "type": "eq"
+        },
+        {
+          "address": "0x8A",
+          "value": "0x69",
+          "type": "eq"
+        }
+      ]
+    },
+    {
+      "name": "Chest Game",
+      "address": "0xA0",
+      "value": "0x06",
+      "type": "eq",
+      "next": [
+        {
+          "address": "0xF36B",
+          "value": "0x01",
+          "type": "eq"
+        },
+        {
+          "address": "0x10",
+          "value": "0x0F",
+          "type": "eq"
+        }
+      ]
+    },
+    {
+      "name": "Bow & Arrows",
+      "address": "0xF340",
+      "value": "0x02",
+      "type": "eq"
+    },
+    {
+      "name": "Bow & Silvers",
+      "address": "0xF340",
+      "value": "0x04",
+      "type": "eq"
+    },
+    {
+      "name": "Blue Boomerang",
+      "address": "0xF341",
+      "value": "0x01",
+      "type": "eq"
+    },
+    {
+      "name": "Red Boomerang",
+      "address": "0xF341",
+      "value": "0x02",
+      "type": "eq"
+    },
+    {
+      "name": "Hookshot",
+      "address": "0xF342",
+      "value": "0x01",
+      "type": "eq"
+    },
+    {
+      "name": "Mushroom",
+      "address": "0xF344",
+      "value": "0x01",
+      "type": "eq"
+    },
+    {
+      "name": "Magic Powder",
+      "address": "0xF344",
+      "value": "0x02",
+      "type": "eq"
+    },
+    {
+      "name": "Fire Rod",
+      "address": "0xF345",
+      "value": "0x01",
+      "type": "eq"
+    },
+    {
+      "name": "Ice Rod",
+      "address": "0xF346",
+      "value": "0x01",
+      "type": "eq"
+    },
+    {
+      "name": "Bombos Medallion",
+      "address": "0xF347",
+      "value": "0x01",
+      "type": "eq"
+    },
+    {
+      "name": "Ether Medallion",
+      "address": "0xF348",
+      "value": "0x01",
+      "type": "eq"
+    },
+    {
+      "name": "Quake Medallion",
+      "address": "0xF349",
+      "value": "0x01",
+      "type": "eq"
+    },
+    {
+      "name": "Lamp",
+      "address": "0xF34A",
+      "value": "0x01",
+      "type": "eq"
+    },
+    {
+      "name": "Hammer",
+      "address": "0xF34B",
+      "value": "0x01",
+      "type": "eq"
+    },
+    {
+      "name": "Shovel",
+      "address": "0xF34C",
+      "value": "0x01",
+      "type": "eq"
+    },
+    {
+      "name": "Flute",
+      "address": "0xF34C",
+      "value": "0x02",
+      "type": "eq"
+    },
+    {
+      "name": "Activated Flute",
+      "address": "0xF34C",
+      "value": "0x03",
+      "type": "eq"
+    },
+    {
+      "name": "Bugnet",
+      "address": "0xF34D",
+      "value": "0x01",
+      "type": "eq"
+    },
+    {
+      "name": "Book of Mudora",
+      "address": "0xF34E",
+      "value": "0x01",
+      "type": "eq"
+    },
+    {
+      "name": "Cane of Somaria",
+      "address": "0xF350",
+      "value": "0x01",
+      "type": "eq"
+    },
+    {
+      "name": "Cane of Byrna",
+      "address": "0xF351",
+      "value": "0x01",
+      "type": "eq"
+    },
+    {
+      "name": "Cape",
+      "address": "0xF352",
+      "value": "0x01",
+      "type": "eq"
+    },
+    {
+      "name": "Mirror",
+      "address": "0xF353",
+      "value": "0x01",
+      "type": "eq"
+    },
+    {
+      "name": "Power Glove",
+      "address": "0xF354",
+      "value": "0x01",
+      "type": "eq"
+    },
+    {
+      "name": "Titan's Mitts",
+      "address": "0xF354",
+      "value": "0x02",
+      "type": "eq"
+    },
+    {
+      "name": "Boots",
+      "address": "0xF355",
+      "value": "0x01",
+      "type": "eq"
+    },
+    {
+      "name": "Flippers",
+      "address": "0xF356",
+      "value": "0x01",
+      "type": "eq"
+    },
+    {
+      "name": "Moon Pearl",
+      "address": "0xF357",
+      "value": "0x01",
+      "type": "eq"
+    },
+    {
+      "name": "Fighter's Sword",
+      "address": "0xF359",
+      "value": "0x01",
+      "type": "eq"
+    },
+    {
+      "name": "Master's Sword",
+      "address": "0xF359",
+      "value": "0x02",
+      "type": "eq"
+    },
+    {
+      "name": "Tempered Sword",
+      "address": "0xF359",
+      "value": "0x03",
+      "type": "eq"
+    },
+    {
+      "name": "Gold Sword",
+      "address": "0xF359",
+      "value": "0x04",
+      "type": "eq"
+    },
+    {
+      "name": "Blue Shield",
+      "address": "0xF35A",
+      "value": "0x01",
+      "type": "eq"
+    },
+    {
+      "name": "Red Shield",
+      "address": "0xF35A",
+      "value": "0x02",
+      "type": "eq"
+    },
+    {
+      "name": "Mirror Shield",
+      "address": "0xF35A",
+      "value": "0x03",
+      "type": "eq"
+    },
+    {
+      "name": "Blue Mail",
+      "address": "0xF35A",
+      "value": "0x01",
+      "type": "eq"
+    },
+    {
+      "name": "Red Mail",
+      "address": "0xF35A",
+      "value": "0x02",
+      "type": "eq"
+    }
+  ]
+}
