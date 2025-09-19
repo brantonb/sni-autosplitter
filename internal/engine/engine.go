@@ -12,6 +12,11 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// Primitive manual testing of resetting a MiSTer has a threshold of about 1.25s where it
+// will fail to connect to the device after a reset. This default gives an extra second of
+// tolerance to account for other transient issues that may arise.
+const DefaultAutostartErrorTolerance = 2*time.Second + 250*time.Millisecond
+
 // SplittingEngine manages the autosplitting logic and state
 type SplittingEngine struct {
 	logger    *logrus.Logger
@@ -21,13 +26,15 @@ type SplittingEngine struct {
 	session   *SplitterSession
 
 	// Configuration
-	pollInterval time.Duration
+	pollInterval            time.Duration
+	autostartErrorTolerance time.Duration
 
 	// Runtime state
-	running bool
-	ctx     context.Context
-	cancel  context.CancelFunc
-	mu      sync.RWMutex
+	running             bool
+	ctx                 context.Context
+	cancel              context.CancelFunc
+	mu                  sync.RWMutex
+	autostartErrorStart time.Time
 
 	// Event subscribers
 	splitSubscribers  map[chan SplitEvent]struct{}
@@ -103,12 +110,16 @@ func (se *SplittingEngine) tick() error {
 
 // checkAutostart checks if the autostart condition is met
 func (se *SplittingEngine) checkAutostart() error {
-	autostart := se.session.GetGameConfig().Autostart
-	autostartState := se.session.GetAutostartState()
+	// pick up the configured tolerance or fall back to the default
+	tol := se.autostartErrorTolerance
+	if tol == 0 {
+		tol = DefaultAutostartErrorTolerance
+	}
 
-	// Errors are intentionally ignored here. Resetting the SNES can cause errors due to memory not
-	// being readable, but ignoring the error allows the run loop to continue trying.
-	result, _ := se.evaluator.EvaluateComplexCondition(se.ctx, se.device.URI, &autostart, autostartState)
+	result, err := se.evaluateAutostartWithTolerance(tol)
+	if err != nil {
+		return fmt.Errorf("failed to evaluate autostart condition: %w", err)
+	}
 	if result {
 		se.logger.Info("Autostart condition met - starting run")
 		se.session.Start()
@@ -119,6 +130,30 @@ func (se *SplittingEngine) checkAutostart() error {
 	}
 
 	return nil
+}
+
+// evaluateAutostartWithTolerance suppresses errors until they persist beyond the tolerance window
+func (se *SplittingEngine) evaluateAutostartWithTolerance(tol time.Duration) (bool, error) {
+	autostart := se.session.GetGameConfig().Autostart
+	autostartState := se.session.GetAutostartState()
+
+	result, err := se.evaluator.EvaluateComplexCondition(se.ctx, se.device.URI, &autostart, autostartState)
+	if err != nil {
+		if se.autostartErrorStart.IsZero() {
+			se.autostartErrorStart = time.Now()
+		}
+		if time.Since(se.autostartErrorStart) > tol {
+			// reset so we don’t immediately re-error next tick
+			se.autostartErrorStart = time.Time{}
+			return false, err
+		}
+		// still within tolerance → suppress
+		return false, nil
+	}
+
+	// success → reset any previous error timestamp
+	se.autostartErrorStart = time.Time{}
+	return result, nil
 }
 
 // checkCurrentSplit checks if the current split condition is met
