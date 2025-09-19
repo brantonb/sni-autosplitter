@@ -139,37 +139,36 @@ func (cl *ConfigLoader) DiscoverRuns() ([]*RunConfig, error) {
 	return runs, nil
 }
 
-// FindRunByCategory finds a run configuration by category name
-func (cl *ConfigLoader) FindRunByCategory(runs []*RunConfig, category string) (*RunConfig, error) {
+// FindRunByName finds a run configuration by its name (exact or partial match)
+func (cl *ConfigLoader) FindRunByName(runs []*RunConfig, name string) (*RunConfig, error) {
 	var matches []*RunConfig
 
-	// Look for exact category matches
+	// Look for exact name matches
 	for _, run := range runs {
-		if strings.EqualFold(run.Category, category) {
+		if strings.EqualFold(run.Name, name) {
 			matches = append(matches, run)
 		}
 	}
 
 	// If no exact matches, try partial matches
 	if len(matches) == 0 {
-		lowerCategory := strings.ToLower(category)
+		lowerName := strings.ToLower(name)
 		for _, run := range runs {
-			if strings.Contains(strings.ToLower(run.Category), lowerCategory) {
+			if strings.Contains(strings.ToLower(run.Name), lowerName) {
 				matches = append(matches, run)
 			}
 		}
 	}
 
 	if len(matches) == 0 {
-		return nil, fmt.Errorf("no run found matching category '%s'", category)
+		return nil, fmt.Errorf("no run found matching name '%s'", name)
 	}
-
 	if len(matches) > 1 {
-		var categories []string
+		var names []string
 		for _, match := range matches {
-			categories = append(categories, match.Category)
+			names = append(names, match.Name)
 		}
-		return nil, fmt.Errorf("multiple runs found matching category '%s': %s", category, strings.Join(categories, ", "))
+		return nil, fmt.Errorf("multiple runs found matching name '%s': %s", name, strings.Join(names, ", "))
 	}
 
 	return matches[0], nil

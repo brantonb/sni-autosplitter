@@ -53,8 +53,8 @@ func (c *CLI) Start(runName string) error {
 	// Select run configuration
 	var selectedRun *config.RunConfig
 	if runName != "" {
-		// Find run by specified name/category
-		selectedRun, err = c.configLoader.FindRunByCategory(runs, runName)
+		// Find run by specified run name
+		selectedRun, err = c.configLoader.FindRunByName(runs, runName)
 		if err != nil {
 			c.printError(fmt.Sprintf("Run selection failed: %v", err))
 			c.printInfo("Available runs:")
