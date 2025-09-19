@@ -106,11 +106,9 @@ func (se *SplittingEngine) checkAutostart() error {
 	autostart := se.session.GetGameConfig().Autostart
 	autostartState := se.session.GetAutostartState()
 
-	result, err := se.evaluator.EvaluateComplexCondition(se.ctx, se.device.URI, &autostart, autostartState)
-	if err != nil {
-		return fmt.Errorf("failed to evaluate autostart condition: %w", err)
-	}
-
+	// Errors are intentionally ignored here. Resetting the SNES can cause errors due to memory not
+	// being readable, but ignoring the error allows the run loop to continue trying.
+	result, _ := se.evaluator.EvaluateComplexCondition(se.ctx, se.device.URI, &autostart, autostartState)
 	if result {
 		se.logger.Info("Autostart condition met - starting run")
 		se.session.Start()
