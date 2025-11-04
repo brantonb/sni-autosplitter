@@ -12,6 +12,11 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// Primitive manual testing of resetting a MiSTer has a threshold of about 1.25s where it
+// will fail to connect to the device after a reset. This default gives an extra second of
+// tolerance to account for other transient issues that may arise.
+const DefaultErrorTolerance = 2*time.Second + 250*time.Millisecond
+
 // SplittingEngine manages the autosplitting logic and state
 type SplittingEngine struct {
 	logger    *logrus.Logger
@@ -21,13 +26,15 @@ type SplittingEngine struct {
 	session   *SplitterSession
 
 	// Configuration
-	pollInterval time.Duration
+	pollInterval   time.Duration
+	errorTolerance time.Duration
 
 	// Runtime state
-	running bool
-	ctx     context.Context
-	cancel  context.CancelFunc
-	mu      sync.RWMutex
+	running    bool
+	ctx        context.Context
+	cancel     context.CancelFunc
+	mu         sync.RWMutex
+	errorStart time.Time
 
 	// Event subscribers
 	splitSubscribers  map[chan SplitEvent]struct{}
@@ -106,11 +113,10 @@ func (se *SplittingEngine) checkAutostart() error {
 	autostart := se.session.GetGameConfig().Autostart
 	autostartState := se.session.GetAutostartState()
 
-	result, err := se.evaluator.EvaluateComplexCondition(se.ctx, se.device.URI, &autostart, autostartState)
+	result, err := se.evaluateComplexConditionWithTolerance(&autostart, autostartState)
 	if err != nil {
 		return fmt.Errorf("failed to evaluate autostart condition: %w", err)
 	}
-
 	if result {
 		se.logger.Info("Autostart condition met - starting run")
 		se.session.Start()
@@ -144,7 +150,8 @@ func (se *SplittingEngine) checkCurrentSplit() error {
 	splitState := se.session.GetSplitState(currentSplitName)
 
 	// Evaluate the split condition
-	result, err := se.evaluator.EvaluateComplexCondition(se.ctx, se.device.URI, split, splitState)
+	// apply tolerance logic for current split
+	result, err := se.evaluateComplexConditionWithTolerance(split, splitState)
 	if err != nil {
 		return fmt.Errorf("failed to evaluate split condition for '%s': %w", currentSplitName, err)
 	}
@@ -155,6 +162,32 @@ func (se *SplittingEngine) checkCurrentSplit() error {
 	}
 
 	return nil
+}
+
+// evaluateComplexConditionWithTolerance suppresses errors until they persist beyond the tolerance window
+func (se *SplittingEngine) evaluateComplexConditionWithTolerance(split *config.Split, splitState *SplitState) (bool, error) {
+	result, err := se.evaluator.EvaluateComplexCondition(se.ctx, se.device.URI, split, splitState)
+	if err != nil {
+		tol := se.errorTolerance
+		if tol == 0 {
+			tol = DefaultErrorTolerance
+		}
+
+		if se.errorStart.IsZero() {
+			se.errorStart = time.Now()
+		}
+		if time.Since(se.errorStart) > tol {
+			// reset so we don’t immediately re-error next tick
+			se.errorStart = time.Time{}
+			return false, err
+		}
+		// still within tolerance → suppress
+		return false, nil
+	}
+
+	// success → reset any previous error timestamp
+	se.errorStart = time.Time{}
+	return result, nil
 }
 
 // triggerSplit triggers a split and handles the transition
