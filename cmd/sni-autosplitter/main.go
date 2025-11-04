@@ -92,7 +92,7 @@ func runAutosplitter(cmd *cobra.Command, args []string) {
 	}
 
 	// Create and start the CLI interface
-	cliInterface := ui.NewCLI(logger, gamesDir, runsDir, enableManualOps)
+	cliInterface := ui.NewCLI(logger, gamesDir, runsDir, enableManualOps, sniHost, sniPort)
 
 	if err := cliInterface.Start(runName); err != nil {
 		logger.WithError(err).Fatal("Failed to start autosplitter")

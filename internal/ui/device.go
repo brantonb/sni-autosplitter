@@ -43,7 +43,7 @@ func (ds *DeviceSelector) SelectDevice(ctx context.Context) (*sni.Device, error)
 	if len(devices) == 0 {
 		ds.cli.printError("No compatible SNI devices found")
 		ds.cli.printInfo("Make sure:")
-		ds.cli.printInfo("  1. SNI is running (should be accessible at localhost:8191)")
+		ds.cli.printInfo(fmt.Sprintf("  1. SNI is running (should be accessible at %s:%d)", ds.cli.sniHost, ds.cli.sniPort))
 		ds.cli.printInfo("  2. Your SNES device is connected and detected by SNI")
 		ds.cli.printInfo("  3. The device supports memory reading")
 		return nil, fmt.Errorf("no compatible devices found")

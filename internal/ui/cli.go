@@ -21,15 +21,19 @@ type CLI struct {
 	configLoader    *config.ConfigLoader
 	scanner         *bufio.Scanner
 	enableManualOps bool
+	sniHost         string
+	sniPort         int
 }
 
 // NewCLI creates a new CLI interface
-func NewCLI(logger *logrus.Logger, gamesDir, runsDir string, enableManualOps bool) *CLI {
+func NewCLI(logger *logrus.Logger, gamesDir, runsDir string, enableManualOps bool, sniHost string, sniPort int) *CLI {
 	return &CLI{
 		logger:          logger,
 		configLoader:    config.NewConfigLoader(logger, gamesDir, runsDir),
 		scanner:         bufio.NewScanner(os.Stdin),
 		enableManualOps: enableManualOps,
+		sniHost:         sniHost,
+		sniPort:         sniPort,
 	}
 }
 
@@ -84,13 +88,13 @@ func (c *CLI) Start(runName string) error {
 
 	// Initialize SNI client
 	c.printInfo("Connecting to SNI server...")
-	sniClient := sni.NewClient(c.logger, "localhost", 8191)
+	sniClient := sni.NewClient(c.logger, c.sniHost, c.sniPort)
 
 	// Connect to SNI with retry logic
 	err = sniClient.ConnectWithRetry(ctx, 3)
 	if err != nil {
 		c.printError(fmt.Sprintf("Failed to connect to SNI: %v", err))
-		c.printInfo("Make sure SNI is running and accessible at localhost:8191")
+		c.printInfo(fmt.Sprintf("Make sure SNI is running and accessible at %s:%d", c.sniHost, c.sniPort))
 		return err
 	}
 	defer sniClient.Disconnect()
