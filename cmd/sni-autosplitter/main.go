@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/jdharms/sni-autosplitter/internal/ui"
 	"github.com/spf13/cobra"
@@ -13,7 +14,7 @@ const (
 	// LiveSplitOnePort is the WebSocket port for LiveSplit One connections
 	LiveSplitOnePort = 1990
 	// MemoryPollInterval is the interval between memory reads in milliseconds
-	MemoryPollInterval = 33
+	MemoryPollInterval = time.Second / 60 // 60 FPS
 )
 
 var (

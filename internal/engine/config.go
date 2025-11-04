@@ -18,7 +18,7 @@ type EngineConfig struct {
 // DefaultEngineConfig returns the default engine configuration
 func DefaultEngineConfig() *EngineConfig {
 	return &EngineConfig{
-		PollInterval: time.Millisecond * 33, // ~30 FPS
+		PollInterval: time.Second / 60, // 60 FPS
 		BufferSize:   100,
 	}
 }
