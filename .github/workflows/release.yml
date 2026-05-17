@@ -18,21 +18,26 @@ jobs:
         with:
           go-version-file: go.mod
 
-      - name: Build all platforms
+      - name: Build and package all platforms
         run: |
           VERSION="${GITHUB_REF_NAME}"
-          LDFLAGS="-X main.version=${VERSION}"
-          GOOS=linux   GOARCH=amd64 go build -ldflags "${LDFLAGS}" -o sni-autosplitter-linux-amd64       ./cmd/sni-autosplitter
-          GOOS=windows GOARCH=amd64 go build -ldflags "${LDFLAGS}" -o sni-autosplitter-windows-amd64.exe ./cmd/sni-autosplitter
-          GOOS=darwin  GOARCH=amd64 go build -ldflags "${LDFLAGS}" -o sni-autosplitter-darwin-amd64      ./cmd/sni-autosplitter
-          GOOS=darwin  GOARCH=arm64 go build -ldflags "${LDFLAGS}" -o sni-autosplitter-darwin-arm64      ./cmd/sni-autosplitter
+          LDFLAGS="-s -w -X main.version=${VERSION}"
 
-      - name: Package archives
-        run: |
-          tar czf sni-autosplitter-linux-amd64.tar.gz  sni-autosplitter-linux-amd64       configs/
-          zip -r  sni-autosplitter-windows-amd64.zip   sni-autosplitter-windows-amd64.exe configs/
-          tar czf sni-autosplitter-darwin-amd64.tar.gz sni-autosplitter-darwin-amd64      configs/
-          tar czf sni-autosplitter-darwin-arm64.tar.gz sni-autosplitter-darwin-arm64      configs/
+          GOOS=linux   GOARCH=amd64 go build -trimpath -ldflags "${LDFLAGS}" -o sni-autosplitter     ./cmd/sni-autosplitter
+          tar czf sni-autosplitter-linux-amd64.tar.gz sni-autosplitter configs/
+          rm sni-autosplitter
+
+          GOOS=windows GOARCH=amd64 go build -trimpath -ldflags "${LDFLAGS}" -o sni-autosplitter.exe ./cmd/sni-autosplitter
+          zip -r sni-autosplitter-windows-amd64.zip sni-autosplitter.exe configs/
+          rm sni-autosplitter.exe
+
+          GOOS=darwin  GOARCH=amd64 go build -trimpath -ldflags "${LDFLAGS}" -o sni-autosplitter     ./cmd/sni-autosplitter
+          tar czf sni-autosplitter-darwin-amd64.tar.gz sni-autosplitter configs/
+          rm sni-autosplitter
+
+          GOOS=darwin  GOARCH=arm64 go build -trimpath -ldflags "${LDFLAGS}" -o sni-autosplitter     ./cmd/sni-autosplitter
+          tar czf sni-autosplitter-darwin-arm64.tar.gz sni-autosplitter configs/
+          rm sni-autosplitter
 
       - name: Create GitHub release
         env:
