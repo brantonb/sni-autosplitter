@@ -19,6 +19,8 @@ const (
 )
 
 var (
+	version = "dev"
+
 	// Command line flags
 	runName         string
 	gamesDir        string
@@ -30,9 +32,10 @@ var (
 	enableManualOps bool
 
 	rootCmd = &cobra.Command{
-		Use:   "sni-autosplitter",
-		Short: "SNI-based autosplitter for LiveSplit One",
-		Long: `SNI AutoSplitter connects to SNI (Super Nintendo Interface) to read game memory
+		Use:     "sni-autosplitter",
+		Version: version,
+		Short:   "SNI-based autosplitter for LiveSplit One",
+		Long:    `SNI AutoSplitter connects to SNI (Super Nintendo Interface) to read game memory
 and automatically trigger splits in LiveSplit One based on configurable conditions.
 
 The autosplitter uses a two-tier configuration system:
