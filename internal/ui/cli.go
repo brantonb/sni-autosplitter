@@ -23,10 +23,12 @@ type CLI struct {
 	enableManualOps bool
 	sniHost         string
 	sniPort         int
+	tlsCert         string
+	tlsKey          string
 }
 
 // NewCLI creates a new CLI interface
-func NewCLI(logger *logrus.Logger, gamesDir, runsDir string, enableManualOps bool, sniHost string, sniPort int) *CLI {
+func NewCLI(logger *logrus.Logger, gamesDir, runsDir string, enableManualOps bool, sniHost string, sniPort int, tlsCert, tlsKey string) *CLI {
 	return &CLI{
 		logger:          logger,
 		configLoader:    config.NewConfigLoader(logger, gamesDir, runsDir),
@@ -34,6 +36,8 @@ func NewCLI(logger *logrus.Logger, gamesDir, runsDir string, enableManualOps boo
 		enableManualOps: enableManualOps,
 		sniHost:         sniHost,
 		sniPort:         sniPort,
+		tlsCert:         tlsCert,
+		tlsKey:          tlsKey,
 	}
 }
 
@@ -130,7 +134,7 @@ func (c *CLI) Start(runName string) error {
 	// Phase 3: Initialize and start splitting engine
 	c.printInfo("Initializing splitting engine...")
 
-	engineController := NewEngineController(c.logger, c, c.enableManualOps)
+	engineController := NewEngineController(c.logger, c, c.enableManualOps, c.tlsCert, c.tlsKey)
 
 	// Validate configuration before initializing engine
 	if err := engineController.ValidateConfiguration(runConfig, gameConfig); err != nil {

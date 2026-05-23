@@ -23,8 +23,10 @@ type Server struct {
 	mu       sync.RWMutex
 
 	// Server configuration
-	host string
-	port int
+	host    string
+	port    int
+	tlsCert string
+	tlsKey  string
 
 	// State
 	running bool
@@ -40,7 +42,7 @@ type Client struct {
 }
 
 // NewServer creates a new LiveSplit One WebSocket server
-func NewServer(logger *logrus.Logger, host string, port int) *Server {
+func NewServer(logger *logrus.Logger, host string, port int, tlsCert, tlsKey string) *Server {
 	return &Server{
 		logger: logger,
 		upgrader: websocket.Upgrader{
@@ -54,6 +56,8 @@ func NewServer(logger *logrus.Logger, host string, port int) *Server {
 		clients: make(map[*Client]bool),
 		host:    host,
 		port:    port,
+		tlsCert: tlsCert,
+		tlsKey:  tlsKey,
 	}
 }
 
@@ -84,11 +88,19 @@ func (s *Server) Start(ctx context.Context) error {
 
 	s.running = true
 
+	useTLS := s.tlsCert != "" && s.tlsKey != ""
+
 	// Start server in goroutine
 	go func() {
-		s.logger.WithField("addr", s.server.Addr).Info("Starting LiveSplit One WebSocket server")
-
-		if err := s.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		var err error
+		if useTLS {
+			s.logger.WithField("addr", s.server.Addr).Info("Starting LiveSplit One WebSocket server (TLS)")
+			err = s.server.ListenAndServeTLS(s.tlsCert, s.tlsKey)
+		} else {
+			s.logger.WithField("addr", s.server.Addr).Info("Starting LiveSplit One WebSocket server")
+			err = s.server.ListenAndServe()
+		}
+		if err != nil && err != http.ErrServerClosed {
 			s.logger.WithError(err).Error("WebSocket server error")
 		}
 	}()
@@ -98,7 +110,11 @@ func (s *Server) Start(ctx context.Context) error {
 		go s.monitorEngineEvents(ctx)
 	}
 
-	s.logger.WithField("addr", s.server.Addr).Info("LiveSplit One WebSocket server started")
+	scheme := "ws"
+	if useTLS {
+		scheme = "wss"
+	}
+	s.logger.WithField("addr", fmt.Sprintf("%s://%s", scheme, s.server.Addr)).Info("LiveSplit One WebSocket server started")
 	return nil
 }
 
