@@ -384,6 +384,12 @@ func (c *Client) handleIncomingMessage(message []byte) {
 		case "SplitUndone":
 			c.logger.Info("Split undone event received from LiveSplit client")
 			c.handleSplitUndoneEvent()
+		case "Paused":
+			c.logger.Info("Paused event received from LiveSplit client")
+			c.handlePausedEvent()
+		case "Resumed":
+			c.logger.Info("Resumed event received from LiveSplit client")
+			c.handleResumedEvent()
 		default:
 			c.logger.WithField("event", event).Info("Unhandled event from LiveSplit client")
 		}
@@ -446,6 +452,44 @@ func (c *Client) handleSplitUndoneEvent() {
 	}
 	c.server.broadcastExcept(data, c)
 	c.logger.Info("UndoSplit command forwarded to other LiveSplit clients")
+}
+
+// handlePausedEvent handles paused events from LiveSplit One
+func (c *Client) handlePausedEvent() {
+	if c.server.engine != nil {
+		if err := c.server.engine.PauseEngine(); err != nil {
+			c.logger.WithError(err).Error("Failed to pause engine")
+			return
+		}
+	}
+
+	cmd := Command{Command: CommandPause}
+	data, err := json.Marshal(cmd)
+	if err != nil {
+		c.logger.WithError(err).Error("Failed to marshal pause command")
+		return
+	}
+	c.server.broadcastExcept(data, c)
+	c.logger.Info("Pause command forwarded to other LiveSplit clients")
+}
+
+// handleResumedEvent handles resumed events from LiveSplit One
+func (c *Client) handleResumedEvent() {
+	if c.server.engine != nil {
+		if err := c.server.engine.ResumeEngine(); err != nil {
+			c.logger.WithError(err).Error("Failed to resume engine")
+			return
+		}
+	}
+
+	cmd := Command{Command: CommandResume}
+	data, err := json.Marshal(cmd)
+	if err != nil {
+		c.logger.WithError(err).Error("Failed to marshal resume command")
+		return
+	}
+	c.server.broadcastExcept(data, c)
+	c.logger.Info("Resume command forwarded to other LiveSplit clients")
 }
 
 // close closes the client connection
