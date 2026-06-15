@@ -415,8 +415,18 @@ func (c *Client) handleSplitSkippedEvent() {
 	if c.server.engine != nil {
 		if err := c.server.engine.ManualSkipSplit(); err != nil {
 			c.logger.WithError(err).Error("Failed to skip split")
+			return
 		}
 	}
+
+	cmd := Command{Command: CommandSkipSplit}
+	data, err := json.Marshal(cmd)
+	if err != nil {
+		c.logger.WithError(err).Error("Failed to marshal skipSplit command")
+		return
+	}
+	c.server.broadcastExcept(data, c)
+	c.logger.Info("SkipSplit command forwarded to other LiveSplit clients")
 }
 
 // handleSplitUndoneEvent handles split undone events from LiveSplit One
@@ -424,8 +434,18 @@ func (c *Client) handleSplitUndoneEvent() {
 	if c.server.engine != nil {
 		if err := c.server.engine.ManualUndoSplit(); err != nil {
 			c.logger.WithError(err).Error("Failed to undo split")
+			return
 		}
 	}
+
+	cmd := Command{Command: CommandUndoSplit}
+	data, err := json.Marshal(cmd)
+	if err != nil {
+		c.logger.WithError(err).Error("Failed to marshal undoSplit command")
+		return
+	}
+	c.server.broadcastExcept(data, c)
+	c.logger.Info("UndoSplit command forwarded to other LiveSplit clients")
 }
 
 // close closes the client connection
