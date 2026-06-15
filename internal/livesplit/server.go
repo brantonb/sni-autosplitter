@@ -208,10 +208,18 @@ func (s *Server) unregisterClient(client *Client) {
 
 // broadcast sends a message to all connected clients
 func (s *Server) broadcast(message []byte) {
+	s.broadcastExcept(message, nil)
+}
+
+// broadcastExcept sends a message to all connected clients except the excluded one
+func (s *Server) broadcastExcept(message []byte, exclude *Client) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
 	for client := range s.clients {
+		if client == exclude {
+			continue
+		}
 		select {
 		case client.send <- message:
 		default:
@@ -387,10 +395,19 @@ func (c *Client) handleResetEvent() {
 	if c.server.engine != nil {
 		if err := c.server.engine.ManualReset(); err != nil {
 			c.logger.WithError(err).Error("Failed to reset run")
-		} else {
-			c.logger.Info("Run reset by LiveSplit client")
+			return
 		}
+		c.logger.Info("Run reset by LiveSplit client")
 	}
+
+	cmd := Command{Command: CommandReset}
+	data, err := json.Marshal(cmd)
+	if err != nil {
+		c.logger.WithError(err).Error("Failed to marshal reset command")
+		return
+	}
+	c.server.broadcastExcept(data, c)
+	c.logger.Info("Reset command forwarded to other LiveSplit clients")
 }
 
 // handleSplitSkippedEvent handles split skipped events from LiveSplit One
