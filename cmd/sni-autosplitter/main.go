@@ -30,6 +30,8 @@ var (
 	sniHost         string
 	sniPort         int
 	enableManualOps bool
+	tlsCert         string
+	tlsKey          string
 
 	rootCmd = &cobra.Command{
 		Use:     "sni-autosplitter",
@@ -62,6 +64,8 @@ func init() {
 		sniHost = viper.GetString("sni-host")
 		sniPort = viper.GetInt("sni-port")
 		enableManualOps = viper.GetBool("enable-manual-ops")
+		tlsCert = viper.GetString("tls-cert")
+		tlsKey = viper.GetString("tls-key")
 	}
 
 	// Set up command line flags
@@ -73,6 +77,8 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&sniHost, "sni-host", "localhost", "SNI gRPC server host")
 	rootCmd.PersistentFlags().IntVar(&sniPort, "sni-port", 8191, "SNI gRPC server port")
 	rootCmd.PersistentFlags().BoolVar(&enableManualOps, "enable-manual-ops", false, "Enable manual split operations for development (split, reset, pause, resume, test)")
+	rootCmd.PersistentFlags().StringVar(&tlsCert, "tls-cert", "", "Path to TLS certificate file (enables WSS)")
+	rootCmd.PersistentFlags().StringVar(&tlsKey, "tls-key", "", "Path to TLS private key file (enables WSS)")
 
 	// Environment variable support and bind all flags
 	viper.SetEnvPrefix("sni_autosplitter")
@@ -102,7 +108,7 @@ func runAutosplitter(cmd *cobra.Command, args []string) {
 	}).Info("Configuration loaded")
 
 	// Create and start the CLI interface
-	cliInterface := ui.NewCLI(logger, gamesDir, runsDir, enableManualOps, sniHost, sniPort)
+	cliInterface := ui.NewCLI(logger, gamesDir, runsDir, enableManualOps, sniHost, sniPort, tlsCert, tlsKey)
 
 	if err := cliInterface.Start(runName); err != nil {
 		logger.WithError(err).Fatal("Failed to start autosplitter")

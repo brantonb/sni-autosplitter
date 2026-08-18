@@ -69,6 +69,17 @@ pick one interactively. To skip the prompt, load a run directly by name:
 In LiveSplit One, go to Settings -> Network -> Server Connection -> Connect,
 and enter `http://localhost:1990`, and splits will be triggered automatically as you play.
 
+To serve over a secure connection (required if LiveSplit One is running in Safari on a page
+loaded over HTTPS, e.g. [one.livesplit.org](https://one.livesplit.org/)), pass a TLS
+certificate and key. [mkcert](https://github.com/FiloSottile/mkcert) is an easy way
+to generate a locally-trusted certificate for this.
+
+```sh
+./sni-autosplitter --tls-cert localhost.pem --tls-key localhost-key.pem
+```
+
+Then connect LiveSplit One to `https://localhost:1990` instead.
+
 ### Flags
 
 Every flag can also be set via an environment variable prefixed with
@@ -85,6 +96,8 @@ Every flag can also be set via an environment variable prefixed with
 | `--sni-host`          | `localhost`      | SNI gRPC server host                                                     |
 | `--sni-port`          | `8191`           | SNI gRPC server port                                                     |
 | `--enable-manual-ops` | `false`          | Enable manual split/reset/pause/resume/test commands, for development   |
+| `--tls-cert`          | *(none)*         | Path to TLS certificate file; enables WSS on the LiveSplit One server   |
+| `--tls-key`           | *(none)*         | Path to TLS private key file; enables WSS on the LiveSplit One server   |
 
 ### Interactive commands
 
